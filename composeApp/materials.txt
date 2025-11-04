@@ -1,0 +1,16 @@
+
+Navigation:
+https://www.jetbrains.com/help/kotlin-multiplatform-dev/compose-navigation.html#basic-navigation-example
+https://www.youtube.com/watch?v=AIC_OFQ1r3k
+https://www.youtube.com/watch?v=jhrfx8Uk_y0
+https://www.youtube.com/watch?v=g4XSWQ7QT8g - Decompose
+
+Room:
+https://proandroiddev.com/room-in-kotlin-multiplatform-kmp-with-koin-d7716bdd8783
+https://developer.android.com/kotlin/multiplatform/room
+
+Koin:
+https://www.youtube.com/watch?v=TAKZy3uQTdE
+https://github.com/InsertKoinIO/koin
+https://insert-koin.io/docs/reference/koin-mp/kmp
+https://insert-koin.io/docs/quickstart/cmp

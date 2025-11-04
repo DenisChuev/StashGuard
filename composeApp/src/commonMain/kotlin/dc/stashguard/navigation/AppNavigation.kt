@@ -6,10 +6,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import dc.stashguard.screens.AccountDetailsScreen
-import dc.stashguard.screens.AccountsScreen
-import dc.stashguard.screens.AddAccountScreen
-import dc.stashguard.screens.OperationsScreen
+import dc.stashguard.screens.accounts.details.AccountDetailsScreen
+import dc.stashguard.screens.accounts.accounts_list.AccountsScreen
+import dc.stashguard.screens.accounts.add_account.AddAccountScreen
+import dc.stashguard.screens.operations.OperationsScreen
 
 @Composable
 fun AppNavigation(modifier: Modifier = Modifier) {

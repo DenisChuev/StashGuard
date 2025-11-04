@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "dc.stashguard"
-version = "1.0.0"
+version = "0.0.1"
 application {
     mainClass.set("dc.stashguard.ApplicationKt")
     
@@ -14,7 +14,6 @@ application {
 }
 
 dependencies {
-    implementation(projects.shared)
     implementation(libs.logback)
     implementation(libs.ktor.serverCore)
     implementation(libs.ktor.serverNetty)
