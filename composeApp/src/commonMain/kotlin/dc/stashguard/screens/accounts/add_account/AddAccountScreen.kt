@@ -33,17 +33,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import co.touchlab.kermit.Logger
 import dc.stashguard.model.Account
-import dc.stashguard.screens.accounts.accounts_list.AccountsViewModel
 import org.koin.compose.viewmodel.koinViewModel
+
+private val logger = Logger.withTag("AddAccountScreen")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddAccountScreen(
     onAccountAdded: (Account) -> Unit,
     onNavigateBack: () -> Unit,
-    viewModel: AccountsViewModel = koinViewModel()
 ) {
+    val viewModel: AddAccountViewModel = koinViewModel()
     var accountName by remember { mutableStateOf("") }
     var accountBalance by remember { mutableStateOf("") }
     var selectedColor by remember { mutableStateOf(Color(0xFF2196F3)) } // Default blue
@@ -114,6 +116,7 @@ fun AddAccountScreen(
             // Add Button
             Button(
                 onClick = {
+                    logger.d("Add account onclick")
                     if (accountName.isNotBlank() && accountBalance.isNotBlank()) {
                         val balanceValue = accountBalance.toDoubleOrNull() ?: 0.0
                         val newAccount = Account(
@@ -122,6 +125,8 @@ fun AddAccountScreen(
                             color = selectedColor,
                             isDebt = isDebt
                         )
+                        logger.d("Try to add new account: $newAccount")
+
                         showError = false
                         viewModel.addAccount(
                             account = newAccount,

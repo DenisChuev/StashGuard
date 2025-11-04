@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import co.touchlab.kermit.Logger
 import dc.stashguard.model.Account
+import dc.stashguard.screens.accounts.add_account.AddAccountViewModel
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.math.absoluteValue
 import kotlin.uuid.ExperimentalUuidApi
@@ -55,9 +56,9 @@ fun AccountsScreen(
     modifier: Modifier = Modifier,
     onNavigateToOperations: () -> Unit,
     onNavigateToAccountDetails: (Account) -> Unit,
-    onNavigateToAddAccount: () -> Unit,
-    viewModel: AccountsViewModel = koinViewModel()
+    onNavigateToAddAccount: () -> Unit
 ) {
+    val viewModel: AccountsViewModel = koinViewModel()
     val accounts by viewModel.accounts.collectAsState()
 
     Column(

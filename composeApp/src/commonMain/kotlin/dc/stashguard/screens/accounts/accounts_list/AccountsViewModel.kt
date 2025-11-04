@@ -2,6 +2,7 @@ package dc.stashguard.screens.accounts.accounts_list
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import co.touchlab.kermit.Logger
 import dc.stashguard.data.local.AccountDao
 import dc.stashguard.model.Account
 import dc.stashguard.model.toAccount
@@ -11,6 +12,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+
+private val logger = Logger.withTag("AccountsViewModel")
 
 class AccountsViewModel(private val accountDao: AccountDao) : ViewModel() {
     val accounts: StateFlow<List<Account>> = accountDao.getAllAccounts().map { entities ->
@@ -24,12 +27,6 @@ class AccountsViewModel(private val accountDao: AccountDao) : ViewModel() {
             initialValue = emptyList()
         )
 
-    fun addAccount(account: Account, onSuccess: () -> Unit) {
-        viewModelScope.launch {
-            accountDao.insertAccount(account.toAccountEntity())
-            onSuccess()
-        }
-    }
 
     fun updateAccount(account: Account) {
         viewModelScope.launch {
