@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import co.touchlab.kermit.Logger
 import dc.stashguard.model.Account
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.math.absoluteValue
@@ -46,6 +47,8 @@ import kotlin.uuid.ExperimentalUuidApi
 //    Account(name = "Wallet", balance = 1325.0, color = Color(0xFF64B5F6)),
 //    Account(name = "ВТБ копилка", balance = 50268.0, color = Color(0xFF2196F3)),
 //)
+
+private val logger = Logger.withTag("AccountsScreen")
 
 @Composable
 fun AccountsScreen(
@@ -83,7 +86,7 @@ fun AccountsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             if (accounts.isNotEmpty()) {
-                print(accounts)
+                logger.d("Show accounts list: $accounts")
 
                 // Total Balance Card (first item)
                 val totalBalance = accounts.sumOf { it.balance }

@@ -3,6 +3,7 @@
 package dc.stashguard.model
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import dc.stashguard.data.local.AccountEntity
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -20,7 +21,7 @@ fun Account.toAccountEntity(): AccountEntity {
         id = this.id,
         name = this.name,
         balance = this.balance,
-        colorArgb = this.color.value.toInt(),
+        colorArgb = this.color.toArgb(),
         isDebt = this.isDebt
     )
 }
@@ -30,7 +31,7 @@ fun AccountEntity.toAccount(): Account {
         id = this.id,
         name = this.name,
         balance = this.balance,
-        color = Color(this.colorArgb.toULong()),
+        color = Color(this.colorArgb),
         isDebt = this.isDebt
     )
 }
