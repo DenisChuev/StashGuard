@@ -54,11 +54,6 @@ fun AppNavigation(modifier: Modifier = Modifier) {
 
         composable<AddAccount> {
             AddAccountScreen(
-                onAccountAdded = { account ->
-                    {
-
-                    }
-                },
                 onNavigateBack = {
                     navController.popBackStack()
                 }

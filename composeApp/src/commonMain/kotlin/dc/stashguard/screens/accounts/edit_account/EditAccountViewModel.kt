@@ -3,6 +3,7 @@ package dc.stashguard.screens.accounts.edit_account
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import co.touchlab.kermit.Logger
 import dc.stashguard.data.local.AccountDao
 import dc.stashguard.model.Account
 import dc.stashguard.model.toAccount
@@ -11,6 +12,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import dc.stashguard.model.toAccountEntity
+
+private val logger = Logger.withTag("EditAccountViewModel")
 
 class EditAccountViewModel(
     private val accountDao: AccountDao,
@@ -131,4 +134,23 @@ class EditAccountViewModel(
             }
         }
     }
+
+    fun deleteAccount(onSuccess: () -> Unit) {
+        logger.d("Trying to delete account: $account")
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+
+            try {
+                accountDao.deleteAccountById(accountId)
+                onSuccess()
+            } catch (e: Exception) {
+                logger.e("Error deleting account", e)
+                _error.value = "Error deleting account: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
 }

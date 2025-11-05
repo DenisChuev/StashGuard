@@ -42,7 +42,7 @@ private val logger = Logger.withTag("AddAccountScreen")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddAccountScreen(
-    onAccountAdded: (Account) -> Unit,
+    onAccountAdded: (Account) -> Unit = {},
     onNavigateBack: () -> Unit,
 ) {
     val viewModel: AddAccountViewModel = koinViewModel()

@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -32,7 +33,7 @@ import dc.stashguard.screens.accounts.add_account.ColorSelectionGrid
 fun AccountDetailsScreen(
     accountId: String,
     onNavigateBack: () -> Unit,
-    viewModel: EditAccountViewModel = koinViewModel { parametersOf(accountId) } // Correct usage
+    viewModel: EditAccountViewModel = koinViewModel { parametersOf(accountId) }
 ) {
     // Collect all necessary state from the ViewModel
     val account by viewModel.account.collectAsState()
@@ -85,9 +86,19 @@ fun AccountDetailsScreen(
                 },
                 actions = {
                     IconButton(
-                        onClick = { viewModel.saveEditedAccount() } // Trigger save
+                        onClick = { viewModel.saveEditedAccount() }
                     ) {
                         Icon(Icons.Default.Save, contentDescription = "Save")
+                    }
+
+                    IconButton(
+                        onClick = {
+                            viewModel.deleteAccount(onSuccess = {
+                                onNavigateBack()
+                            })
+                        }
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete")
                     }
                 }
             )
@@ -100,9 +111,6 @@ fun AccountDetailsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Display current account name as a header (optional, can remove if using edit fields only)
-            // Text(text = "Editing: ${account?.name ?: "Account"}")
-
             // Account Name Input
             OutlinedTextField(
                 value = editingName,
@@ -183,19 +191,6 @@ fun AccountDetailsScreen(
                     style = MaterialTheme.typography.bodySmall
                 )
             }
-
-            // Save Button (Alternative to top app bar action, or remove if using top bar)
-            // Button(
-            //     onClick = { viewModel.saveEditedAccount() },
-            //     modifier = Modifier.fillMaxWidth(),
-            //     enabled = !isLoading // Disable while saving
-            // ) {
-            //     if (isLoading) {
-            //         CircularProgressIndicator()
-            //     } else {
-            //         Text("Save Changes")
-            //     }
-            // }
         }
     }
 }
