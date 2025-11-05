@@ -6,7 +6,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import dc.stashguard.screens.accounts.details.AccountDetailsScreen
+import dc.stashguard.screens.accounts.edit_account.AccountDetailsScreen
 import dc.stashguard.screens.accounts.accounts_list.AccountsScreen
 import dc.stashguard.screens.accounts.add_account.AddAccountScreen
 import dc.stashguard.screens.operations.OperationsScreen
@@ -25,8 +25,8 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                 onNavigateToOperations = {
                     navController.navigate(Operations)
                 },
-                onNavigateToAccountDetails = { account ->
-                    navController.navigate(AccountDetails(account.name))
+                onNavigateToAccountDetails = { accountId ->
+                    navController.navigate(AccountDetails(accountId))
                 },
                 onNavigateToAddAccount = {
                     navController.navigate(AddAccount)

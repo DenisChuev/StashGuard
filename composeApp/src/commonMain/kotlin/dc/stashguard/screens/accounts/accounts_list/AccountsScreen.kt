@@ -34,20 +34,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import co.touchlab.kermit.Logger
 import dc.stashguard.model.Account
-import dc.stashguard.screens.accounts.add_account.AddAccountViewModel
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.math.absoluteValue
 import kotlin.uuid.ExperimentalUuidApi
-
-
-//val accounts = listOf(
-//    Account(name = "Яндекс Pay", balance = 26297.0, color = Color(0xFFFF4081)),
-//    Account(name = "МТС деньги", balance = 9136.5, color = Color(0xFFE91E63)),
-//    Account(name = "Платина 100k", balance = -10000.0, color = Color(0xFFFFC107), isDebt = true),
-//    Account(name = "ВТБ", balance = 0.0, color = Color(0xFF2196F3)),
-//    Account(name = "Wallet", balance = 1325.0, color = Color(0xFF64B5F6)),
-//    Account(name = "ВТБ копилка", balance = 50268.0, color = Color(0xFF2196F3)),
-//)
 
 private val logger = Logger.withTag("AccountsScreen")
 
@@ -55,10 +44,10 @@ private val logger = Logger.withTag("AccountsScreen")
 fun AccountsScreen(
     modifier: Modifier = Modifier,
     onNavigateToOperations: () -> Unit,
-    onNavigateToAccountDetails: (Account) -> Unit,
-    onNavigateToAddAccount: () -> Unit
+    onNavigateToAccountDetails: (String) -> Unit,
+    onNavigateToAddAccount: () -> Unit,
+    viewModel: AccountsViewModel = koinViewModel()
 ) {
-    val viewModel: AccountsViewModel = koinViewModel()
     val accounts by viewModel.accounts.collectAsState()
 
     Column(
@@ -93,9 +82,11 @@ fun AccountsScreen(
                 val totalBalance = accounts.sumOf { it.balance }
                 item {
                     AccountCard(
-                        name = "Balance",
-                        balance = totalBalance,
-                        color = Color.Black,
+                        Account(
+                            name = "Balance",
+                            balance = totalBalance,
+                            color = Color.Black
+                        ),
                         isTotal = true
                     )
                 }
@@ -103,12 +94,9 @@ fun AccountsScreen(
                 // Accounts List
                 items(accounts) { account ->
                     AccountCard(
-                        name = account.name,
-                        balance = account.balance,
-                        color = account.color,
-                        isDebt = account.isDebt,
+                        account = account,
                         onClick = { onNavigateToOperations() },
-                        onEdit = { onNavigateToAccountDetails(account) }
+                        onEdit = { onNavigateToAccountDetails(account.id) }
                     )
                 }
             }
@@ -123,23 +111,21 @@ fun AccountsScreen(
 
 @Composable
 private fun AccountCard(
-    name: String,
-    balance: Double,
-    color: Color,
-    isDebt: Boolean = false,
+    account: Account,
     isTotal: Boolean = false,
     onClick: () -> Unit = {},
     onEdit: () -> Unit = {}
 ) {
-    val formattedBalance = formatCurrency(balance)
+    val formattedBalance = formatCurrency(account.balance)
     val textColor = Color.White
-    val balanceColor = if (isDebt && balance < 0) Color.Red else textColor
+//    val balanceColor = if (isDebt && balance < 0) Color.Red else textColor
+    val balanceColor = textColor
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(color)
+            .background(account.color)
             .clickable(onClick = onClick)
             .padding(16.dp),
         contentAlignment = Alignment.CenterStart
@@ -150,7 +136,7 @@ private fun AccountCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = name,
+                text = account.name,
                 color = textColor,
                 fontSize = 16.sp,
                 fontWeight = if (isTotal) FontWeight.Bold else FontWeight.Normal
