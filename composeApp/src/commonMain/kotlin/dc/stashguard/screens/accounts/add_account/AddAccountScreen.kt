@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalTime::class)
+
 package dc.stashguard.screens.accounts.add_account
 
 import androidx.compose.foundation.background
@@ -36,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import co.touchlab.kermit.Logger
 import dc.stashguard.model.Account
 import org.koin.compose.viewmodel.koinViewModel
+import kotlin.time.ExperimentalTime
 
 private val logger = Logger.withTag("AddAccountScreen")
 

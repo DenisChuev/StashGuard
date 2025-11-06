@@ -10,14 +10,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 
 @Database(
-    entities = [AccountEntity::class],
-    version = 1,
-    exportSchema = false
+    entities = [AccountEntity::class, OperationEntity::class],
+    version = 2,
+    exportSchema = true
 )
 @TypeConverters(RoomConverters::class)
 @ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun getAccountDao(): AccountDao
+    abstract fun getOperationDao(): OperationDao
 }
 
 // The Room compiler generates the `actual` implementations.
@@ -32,5 +33,6 @@ fun getAppDatabase(
     return builder
         .setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(Dispatchers.IO)
+        .fallbackToDestructiveMigration(true)
         .build()
 }

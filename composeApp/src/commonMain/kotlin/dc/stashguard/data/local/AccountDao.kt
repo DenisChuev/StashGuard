@@ -15,7 +15,10 @@ interface AccountDao {
 
     // Query to get a specific account by ID
     @Query("SELECT * FROM accounts WHERE id = :id")
-    suspend fun getAccountById(id: String): AccountEntity?
+    fun getAccountById(id: String): Flow<AccountEntity?>
+
+    @Query("SELECT * FROM accounts WHERE id = :id")
+    suspend fun getAccountByIdOnce(id: String): AccountEntity?
 
     // Insert a single account
     @Insert(onConflict = OnConflictStrategy.REPLACE)

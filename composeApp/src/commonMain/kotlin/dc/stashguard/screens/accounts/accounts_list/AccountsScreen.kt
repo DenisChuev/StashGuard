@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalUuidApi::class)
+@file:OptIn(ExperimentalUuidApi::class, ExperimentalTime::class)
 
 package dc.stashguard.screens.accounts.accounts_list
 
@@ -36,6 +36,7 @@ import co.touchlab.kermit.Logger
 import dc.stashguard.model.Account
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.math.absoluteValue
+import kotlin.time.ExperimentalTime
 import kotlin.uuid.ExperimentalUuidApi
 
 private val logger = Logger.withTag("AccountsScreen")
@@ -43,8 +44,8 @@ private val logger = Logger.withTag("AccountsScreen")
 @Composable
 fun AccountsScreen(
     modifier: Modifier = Modifier,
-    onNavigateToOperations: () -> Unit,
     onNavigateToAccountDetails: (String) -> Unit,
+    onNavigateToEditAccount: (String) -> Unit,
     onNavigateToAddAccount: () -> Unit,
     viewModel: AccountsViewModel = koinViewModel()
 ) {
@@ -95,8 +96,8 @@ fun AccountsScreen(
                 items(accounts) { account ->
                     AccountCard(
                         account = account,
-                        onClick = { onNavigateToOperations() },
-                        onEdit = { onNavigateToAccountDetails(account.id) }
+                        onClick = { onNavigateToAccountDetails(account.id) },
+                        onEdit = { onNavigateToEditAccount(account.id) }
                     )
                 }
             }
@@ -110,7 +111,7 @@ fun AccountsScreen(
 }
 
 @Composable
-private fun AccountCard(
+fun AccountCard(
     account: Account,
     isTotal: Boolean = false,
     onClick: () -> Unit = {},

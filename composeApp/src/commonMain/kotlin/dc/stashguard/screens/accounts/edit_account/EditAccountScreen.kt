@@ -30,7 +30,7 @@ import dc.stashguard.screens.accounts.add_account.ColorSelectionGrid
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AccountDetailsScreen(
+fun EditAccountScreen(
     accountId: String,
     onNavigateBack: () -> Unit,
     viewModel: EditAccountViewModel = koinViewModel { parametersOf(accountId) }
@@ -56,9 +56,6 @@ fun AccountDetailsScreen(
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(text = "Error: $error")
-                Button(onClick = { viewModel.loadAccountDetails() }) { // Retry loading
-                    Text("Retry")
-                }
             }
         }
         return

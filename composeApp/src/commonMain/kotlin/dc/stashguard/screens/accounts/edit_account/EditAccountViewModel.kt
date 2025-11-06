@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalTime::class)
+
 package dc.stashguard.screens.accounts.edit_account
 
 import androidx.compose.ui.graphics.Color
@@ -12,6 +14,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import dc.stashguard.model.toAccountEntity
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.flow.stateIn
+import kotlin.time.ExperimentalTime
 
 private val logger = Logger.withTag("EditAccountViewModel")
 
@@ -20,9 +27,22 @@ class EditAccountViewModel(
     private val accountId: String
 ) : ViewModel() {
 
-    // --- State for loading the initial account ---
-    private val _account = MutableStateFlow<Account?>(null)
-    val account: StateFlow<Account?> = _account.asStateFlow()
+    // --- Reactive account stream from database ---
+    private val _accountFlow = accountDao.getAccountById(accountId)
+        .shareIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            replay = 1
+        )
+
+    // Public account state
+    val account: StateFlow<Account?> = _accountFlow
+        .map { entity -> entity?.toAccount() }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = null
+        )
 
     // --- State for editing ---
     private val _editingAccountName = MutableStateFlow("")
@@ -37,40 +57,35 @@ class EditAccountViewModel(
     private val _editingAccountIsDebt = MutableStateFlow(false)
     val editingAccountIsDebt: StateFlow<Boolean> = _editingAccountIsDebt.asStateFlow()
 
-    private val _isLoading = MutableStateFlow(true)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+    // --- Derived states ---
+    val isLoading: StateFlow<Boolean> = _accountFlow
+        .map { it == null }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = true
+        )
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    // --- Initialize editing fields when account loads ---
     init {
-        loadAccountDetails()
-    }
-
-    fun loadAccountDetails() {
         viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = null
-            try {
-                val accountEntity = accountDao.getAccountById(accountId)
-                if (accountEntity != null) {
+            _accountFlow.collect { entity ->
+                entity?.let { accountEntity ->
                     val account = accountEntity.toAccount()
-                    _account.value = account
+                    // Initialize editing fields with current account data
                     _editingAccountName.value = account.name
                     _editingAccountBalance.value = account.balance.toString()
                     _editingAccountColor.value = account.color
                     _editingAccountIsDebt.value = account.isDebt
-                } else {
-                    _error.value = "Account not found"
                 }
-            } catch (e: Exception) {
-                _error.value = "Error loading account: ${e.message}"
-            } finally {
-                _isLoading.value = false
             }
         }
     }
 
+    // --- Editing actions ---
     fun updateEditingName(newName: String) {
         _editingAccountName.value = newName
     }
@@ -88,69 +103,70 @@ class EditAccountViewModel(
     }
 
     // --- Function to save the edited account back to the database ---
-    fun saveEditedAccount() {
-        val name = _editingAccountName.value
-        val balanceString = _editingAccountBalance.value
+    fun saveEditedAccount(): Boolean {
+        val name = _editingAccountName.value.trim()
+        val balanceString = _editingAccountBalance.value.trim()
         val color = _editingAccountColor.value
         val isDebt = _editingAccountIsDebt.value
 
         // Validate inputs before saving
-        if (name.isBlank() || balanceString.isBlank()) {
-            _error.value = "Name and Balance are required."
-            return
+        if (name.isBlank()) {
+            _error.value = "Account name is required."
+            return false
+        }
+
+        if (balanceString.isBlank()) {
+            _error.value = "Balance is required."
+            return false
         }
 
         val balance = balanceString.toDoubleOrNull()
         if (balance == null) {
             _error.value = "Balance must be a valid number."
-            return
+            return false
         }
 
-        // Create the updated Account object with the new values
-        val updatedAccount = _account.value?.copy(
-            name = name,
-            balance = balance,
-            color = color,
-            isDebt = isDebt
-        )
-
         viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = null
             try {
-                if (updatedAccount != null) {
-                    // Update the database using the DAO
+                // Get current account to preserve other fields
+                val currentAccount = account.value
+                if (currentAccount != null) {
+                    // Create the updated Account object
+                    val updatedAccount = currentAccount.copy(
+                        name = name,
+                        balance = balance,
+                        color = color,
+                        isDebt = isDebt
+                    )
+
+                    // Update the database - this will automatically trigger the flow update
                     accountDao.updateAccount(updatedAccount.toAccountEntity())
-                    // Optionally, update the main account state flow with the new data
-                    _account.value = updatedAccount
                 } else {
-                    // This shouldn't happen if loadAccountDetails succeeded, but good to check
                     _error.value = "Account data not available for update."
                 }
             } catch (e: Exception) {
                 _error.value = "Error saving account: ${e.message}"
-            } finally {
-                _isLoading.value = false
             }
         }
+
+        return true
     }
 
     fun deleteAccount(onSuccess: () -> Unit) {
-        logger.d("Trying to delete account: $account")
+        logger.d("Trying to delete account: $accountId")
         viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = null
-
             try {
                 accountDao.deleteAccountById(accountId)
                 onSuccess()
             } catch (e: Exception) {
                 logger.e("Error deleting account", e)
                 _error.value = "Error deleting account: ${e.message}"
-            } finally {
-                _isLoading.value = false
             }
         }
     }
 
+    // Clear error when user dismisses it
+    fun clearError() {
+        _error.value = null
+    }
 }

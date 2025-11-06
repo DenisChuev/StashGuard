@@ -1,9 +1,14 @@
+@file:OptIn(ExperimentalTime::class)
+
 package dc.stashguard.data.local
 
 import androidx.compose.ui.graphics.Color
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverter
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -14,7 +19,9 @@ data class AccountEntity(
     val name: String,
     val balance: Double,
     val colorArgb: Int,
-    val isDebt: Boolean = false
+    val isDebt: Boolean = false,
+    @ColumnInfo(name = "created_at")
+    val createdAt: Long = Clock.System.now().toEpochMilliseconds(),
 )
 
 object RoomConverters {

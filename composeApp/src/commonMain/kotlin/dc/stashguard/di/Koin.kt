@@ -2,20 +2,45 @@ package dc.stashguard.di
 
 import dc.stashguard.data.local.AccountDao
 import dc.stashguard.data.local.AppDatabase
+import dc.stashguard.data.local.OperationDao
+import dc.stashguard.model.OperationType
 import dc.stashguard.screens.accounts.accounts_list.AccountsViewModel
 import dc.stashguard.screens.accounts.add_account.AddAccountViewModel
+import dc.stashguard.screens.accounts.details.DetailsAccountViewModel
 import dc.stashguard.screens.accounts.edit_account.EditAccountViewModel
+import dc.stashguard.screens.operations.add_operation.AddOperationViewModel
 import org.koin.core.context.startKoin
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.KoinAppDeclaration
 import org.koin.dsl.module
 
-fun commonModule(): Module = module {
+val databaseModule = module {
     single<AccountDao> { get<AppDatabase>().getAccountDao() }
+    single<OperationDao> { get<AppDatabase>().getOperationDao() }
+}
+
+val viewModelModule = module {
     viewModel { AccountsViewModel(get()) }
     viewModel { AddAccountViewModel(get()) }
     viewModel { (accountId: String) -> EditAccountViewModel(get(), accountId) }
+
+    viewModel { (accountId: String) ->
+        DetailsAccountViewModel(
+            accountDao = get(),
+            operationDao = get(),
+            accountId = accountId
+        )
+    }
+
+    viewModel { (accountId: String, operationType: OperationType) ->
+        AddOperationViewModel(
+            accountDao = get(),
+            operationDao = get(),
+            accountId = accountId,
+            operationType = operationType
+        )
+    }
 }
 
 expect fun platformModule(): Module
@@ -24,7 +49,7 @@ fun initKoin(appDeclaration: KoinAppDeclaration = {}) {
     startKoin {
         appDeclaration()
         modules(
-            commonModule() + platformModule()
+            databaseModule + viewModelModule + platformModule()
         )
     }
 }
