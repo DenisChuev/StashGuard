@@ -35,7 +35,7 @@ fun Account.toAccountEntity(): AccountEntity {
         id = this.id,
         name = this.name,
         balance = this.balance,
-        colorArgb = this.color.toArgb(),
+        color = this.color.toArgb(),
         isDebt = this.isDebt,
         createdAt = this.createdAt.epochSeconds
     )
@@ -46,7 +46,7 @@ fun AccountEntity.toAccount(): Account {
         id = this.id,
         name = this.name,
         balance = this.balance,
-        color = Color(this.colorArgb),
+        color = Color(this.color),
         isDebt = this.isDebt,
         createdAt = Instant.fromEpochSeconds(this.createdAt)
     )

@@ -43,7 +43,6 @@ private val logger = Logger.withTag("AccountsScreen")
 
 @Composable
 fun AccountsScreen(
-    modifier: Modifier = Modifier,
     onNavigateToAccountDetails: (String) -> Unit,
     onNavigateToEditAccount: (String) -> Unit,
     onNavigateToAddAccount: () -> Unit,
@@ -52,9 +51,8 @@ fun AccountsScreen(
     val accounts by viewModel.accounts.collectAsState()
 
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {

@@ -7,7 +7,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverter
-import kotlin.time.Clock
+import dc.stashguard.util.DateUtils
 import kotlin.time.ExperimentalTime
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -18,10 +18,10 @@ data class AccountEntity(
     @PrimaryKey val id: String = Uuid.random().toString(),
     val name: String,
     val balance: Double,
-    val colorArgb: Int,
+    val color: Int,
     val isDebt: Boolean = false,
     @ColumnInfo(name = "created_at")
-    val createdAt: Long = Clock.System.now().toEpochMilliseconds(),
+    val createdAt: Long = DateUtils.currentDateMillis(),
 )
 
 object RoomConverters {

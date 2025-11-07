@@ -15,6 +15,12 @@ object OperationsTab {
     const val TITLE = "Operations"
 }
 
+@Serializable
+object CategoriesTab{
+    const val ROUTE = "dc.stashguard.navigation.CategoriesTab"
+    const val TITLE = "Categories"
+}
+
 // Nested Accounts routes
 @Serializable
 data class EditAccount(val accountId: String)

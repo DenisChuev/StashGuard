@@ -6,6 +6,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import dc.stashguard.model.OperationType
+import dc.stashguard.util.DateUtils
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -37,7 +38,7 @@ data class OperationEntity(
     val note: String,
 
     @ColumnInfo(name = "created_at")
-    val createdAt: Long = Clock.System.now().toEpochMilliseconds(),
+    val createdAt: Long = DateUtils.currentDateMillis(),
 
     // For transfers - reference to the other account involved
     @ColumnInfo(name = "linked_operation_id")

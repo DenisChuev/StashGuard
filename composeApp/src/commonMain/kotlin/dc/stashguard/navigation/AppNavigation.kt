@@ -23,12 +23,14 @@ import dc.stashguard.screens.accounts.accounts_list.AccountsScreen
 import dc.stashguard.screens.accounts.add_account.AddAccountScreen
 import dc.stashguard.screens.accounts.details.DetailsAccountScreen
 import dc.stashguard.screens.accounts.edit_account.EditAccountScreen
+import dc.stashguard.screens.categories.CategoriesScreen
 import dc.stashguard.screens.operations.OperationsScreen
 import dc.stashguard.screens.operations.add_operation.AddOperationScreen
 
 val mainTabRoutes = setOf(
     AccountsTab.ROUTE,
-    OperationsTab.ROUTE
+    OperationsTab.ROUTE,
+    CategoriesTab.ROUTE
 )
 
 fun isMainTabRoute(route: String?): Boolean {
@@ -75,6 +77,10 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                                         is BottomNavigationItem.Operations -> {
                                             navController.navigateTo(OperationsTab)
                                         }
+
+                                        BottomNavigationItem.Categories -> {
+                                            navController.navigateTo(CategoriesTab)
+                                        }
                                     }
                                 }
                             }
@@ -83,7 +89,6 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                 }
             }
         },
-        contentWindowInsets = WindowInsets.systemBars
     ) { paddingValues ->
         NavHost(
             navController = navController,
@@ -93,7 +98,6 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             // Accounts Tab
             composable<AccountsTab> {
                 AccountsScreen(
-                    modifier = modifier,
                     onNavigateToAccountDetails = { accountId ->
                         navController.navigate(DetailsAccount(accountId))
                     },
@@ -156,6 +160,12 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                     onNavigateBack = {
                         navController.popBackStack()
                     }
+                )
+            }
+
+            composable<CategoriesTab> {
+                CategoriesScreen(
+                    onNavigateBack = { /* Not needed for tab navigation */ }
                 )
             }
         }

@@ -2,12 +2,14 @@ package dc.stashguard.di
 
 import dc.stashguard.data.local.AccountDao
 import dc.stashguard.data.local.AppDatabase
+import dc.stashguard.data.local.CategoryDao
 import dc.stashguard.data.local.OperationDao
 import dc.stashguard.model.OperationType
 import dc.stashguard.screens.accounts.accounts_list.AccountsViewModel
 import dc.stashguard.screens.accounts.add_account.AddAccountViewModel
 import dc.stashguard.screens.accounts.details.DetailsAccountViewModel
 import dc.stashguard.screens.accounts.edit_account.EditAccountViewModel
+import dc.stashguard.screens.categories.CategoriesViewModel
 import dc.stashguard.screens.operations.add_operation.AddOperationViewModel
 import org.koin.core.context.startKoin
 import org.koin.core.module.Module
@@ -18,6 +20,7 @@ import org.koin.dsl.module
 val databaseModule = module {
     single<AccountDao> { get<AppDatabase>().getAccountDao() }
     single<OperationDao> { get<AppDatabase>().getOperationDao() }
+    single<CategoryDao> { get<AppDatabase>().getCategoryDao() }
 }
 
 val viewModelModule = module {
@@ -37,10 +40,13 @@ val viewModelModule = module {
         AddOperationViewModel(
             accountDao = get(),
             operationDao = get(),
+            categoryDao = get(),
             accountId = accountId,
             operationType = operationType
         )
     }
+
+    viewModel { CategoriesViewModel(get()) }
 }
 
 expect fun platformModule(): Module
