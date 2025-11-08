@@ -23,10 +23,10 @@ data class CategoryEntity(
     val color: Int, // Store as Int (ARGB)
 
     @ColumnInfo(name = "icon_name")
-    val iconName: String, // Store icon name as string
+    val iconName: String,
 
     @ColumnInfo(name = "type")
-    val type: CategoryType, // REVENUE or EXPENSE
+    val type: CategoryType,
 
     @ColumnInfo(name = "created_at")
     val createdAt: Long = DateUtils.currentDateMillis()

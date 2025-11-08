@@ -3,6 +3,7 @@ package dc.stashguard.navigation
 import dc.stashguard.model.OperationType
 import kotlinx.serialization.Serializable
 
+// Tabs
 @Serializable
 object AccountsTab {
     const val ROUTE = "dc.stashguard.navigation.AccountsTab"

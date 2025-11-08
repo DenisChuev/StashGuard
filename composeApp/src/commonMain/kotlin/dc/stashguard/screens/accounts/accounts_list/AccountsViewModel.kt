@@ -17,16 +17,12 @@ private val logger = Logger.withTag("AccountsViewModel")
 
 class AccountsViewModel(private val accountDao: AccountDao) : ViewModel() {
     val accounts: StateFlow<List<Account>> = accountDao.getAllAccounts().map { entities ->
-        entities.map {
-            it.toAccount()
-        }
-    }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
-
+        entities.map { it.toAccount() }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
     fun updateAccount(account: Account) {
         viewModelScope.launch {

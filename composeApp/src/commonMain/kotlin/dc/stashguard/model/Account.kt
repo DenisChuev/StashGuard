@@ -6,14 +6,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import dc.stashguard.data.local.AccountEntity
 import dc.stashguard.util.DateUtils
-import kotlinx.serialization.Serializable
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 
-@Serializable
 enum class AccountType {
     SAVINGS,
     CHECKING,

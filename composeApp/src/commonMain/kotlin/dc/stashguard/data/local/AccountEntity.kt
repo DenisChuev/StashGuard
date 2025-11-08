@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalTime::class)
+@file:OptIn(ExperimentalTime::class, ExperimentalUuidApi::class)
 
 package dc.stashguard.data.local
 
@@ -12,7 +12,6 @@ import kotlin.time.ExperimentalTime
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
-@OptIn(ExperimentalUuidApi::class)
 @Entity(tableName = "accounts")
 data class AccountEntity(
     @PrimaryKey val id: String = Uuid.random().toString(),

@@ -560,63 +560,6 @@ fun AmountInputSection(
 }
 
 @Composable
-fun CategoryInputSection(
-    category: String,
-    onCategoryChange: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val commonCategories = listOf(
-        "Food", "Transport", "Shopping", "Entertainment",
-        "Bills", "Healthcare", "Salary", "Investment"
-    )
-
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = "Category",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Category chips
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                items(commonCategories) { cat ->
-                    FilterChip(
-                        selected = category == cat,
-                        onClick = { onCategoryChange(cat) },
-                        label = { Text(cat) }
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Custom category input
-            OutlinedTextField(
-                value = category,
-                onValueChange = onCategoryChange,
-                label = { Text("Or enter custom category") },
-                placeholder = { Text("Category name") },
-                leadingIcon = {
-                    Icon(Icons.Default.Category, "Category")
-                },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-    }
-}
-
-@Composable
 fun TransferAccountSection(
     toAccountId: String,
     availableAccounts: List<Account>,

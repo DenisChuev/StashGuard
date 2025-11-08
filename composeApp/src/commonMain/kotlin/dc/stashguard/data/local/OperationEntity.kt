@@ -1,4 +1,7 @@
-@file:OptIn(ExperimentalTime::class, ExperimentalSerializationApi::class)
+@file:OptIn(
+    ExperimentalTime::class, ExperimentalSerializationApi::class,
+    ExperimentalUuidApi::class
+)
 
 package dc.stashguard.data.local
 
@@ -8,12 +11,10 @@ import androidx.room.PrimaryKey
 import dc.stashguard.model.OperationType
 import dc.stashguard.util.DateUtils
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
-@OptIn(ExperimentalUuidApi::class)
 @Entity(tableName = "operations")
 data class OperationEntity(
     @PrimaryKey

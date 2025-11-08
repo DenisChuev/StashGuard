@@ -26,6 +26,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dc.stashguard.model.Account
 import dc.stashguard.model.Operation
 import dc.stashguard.model.OperationType
+import dc.stashguard.util.toBalanceString
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.viewmodel.koinViewModel
@@ -247,7 +248,7 @@ fun AccountSummaryCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = "${account.balance}",
+                text = account.balance.toBalanceString(),
                 style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.Bold,
                 color = if (account.balance >= 0) {

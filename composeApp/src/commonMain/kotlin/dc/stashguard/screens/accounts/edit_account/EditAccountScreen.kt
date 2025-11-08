@@ -26,6 +26,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.input.KeyboardType
+import dc.stashguard.screens.accounts.add_account.BalanceInput
 import dc.stashguard.screens.accounts.add_account.ColorSelectionGrid
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -73,6 +74,7 @@ fun EditAccountScreen(
     var showColorPicker by remember { mutableStateOf(false) }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(),
         topBar = {
             TopAppBar(
                 title = { Text("Edit Account") },
@@ -118,17 +120,9 @@ fun EditAccountScreen(
             )
 
             // Balance Input
-            OutlinedTextField(
-                value = editingBalance,
-                onValueChange = { newValue ->
-                    // Allow only numbers, negative sign, and decimal point
-                    if (newValue.isEmpty() || newValue.matches(Regex("-?\\d*\\.?\\d*"))) {
-                        viewModel.updateEditingBalance(newValue)
-                    }
-                },
-                label = { Text("Balance") },
-                placeholder = { Text("0.00") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            BalanceInput(
+                balance = editingBalance,
+                onBalanceChange = { newBalance -> viewModel.updateEditingBalance(newBalance) },
                 modifier = Modifier.fillMaxWidth()
             )
 

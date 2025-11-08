@@ -14,10 +14,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import dc.stashguard.model.toAccountEntity
+import dc.stashguard.util.toBalanceString
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
+import kotlin.math.pow
 import kotlin.time.ExperimentalTime
 
 private val logger = Logger.withTag("EditAccountViewModel")
@@ -77,7 +79,7 @@ class EditAccountViewModel(
                     val account = accountEntity.toAccount()
                     // Initialize editing fields with current account data
                     _editingAccountName.value = account.name
-                    _editingAccountBalance.value = account.balance.toString()
+                    _editingAccountBalance.value = account.balance.toBalanceString()
                     _editingAccountColor.value = account.color
                     _editingAccountIsDebt.value = account.isDebt
                 }
