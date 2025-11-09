@@ -39,7 +39,7 @@ data class OperationEntity(
     val note: String,
 
     @ColumnInfo(name = "created_at")
-    val createdAt: Long = DateUtils.currentDateMillis(),
+    val createdAt: Long = DateUtils.currentInstantMillis(),
 
     // For transfers - reference to the other account involved
     @ColumnInfo(name = "linked_operation_id")

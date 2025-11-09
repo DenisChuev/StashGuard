@@ -2,6 +2,8 @@ package dc.stashguard.util
 
 import kotlin.math.pow
 
+fun String.toBalanceDouble() = this.replace(" ", "").toDoubleOrNull()
+
 fun Double.toBalanceString(maxFractionDigits: Int = 2): String {
     if (this == 0.0) return "0"
 

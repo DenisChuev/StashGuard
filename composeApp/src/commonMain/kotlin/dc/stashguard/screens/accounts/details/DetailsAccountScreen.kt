@@ -49,6 +49,7 @@ fun DetailsAccountScreen(
     val statistics by viewModel.accountStatistics.collectAsStateWithLifecycle()
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             DetailsTopAppBar(
                 onNavigateBack = onNavigateBack,
@@ -182,7 +183,7 @@ fun AccountDetailsContent(
         )
 
         // Account Information Section
-        AccountInformationSection(account = account)
+//        AccountInformationSection(account = account)
     }
 }
 

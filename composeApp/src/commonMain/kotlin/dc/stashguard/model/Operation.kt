@@ -38,7 +38,7 @@ fun OperationEntity.toOperation(): Operation {
         category = this.category,
         date = LocalDate.parse(this.date),
         note = this.note,
-        createdAt = Instant.fromEpochSeconds(this.createdAt),
+        createdAt = Instant.fromEpochMilliseconds(this.createdAt),
         linkedOperationId = this.linkedOperationId,
         toAccountId = this.toAccountId
     )
@@ -53,7 +53,7 @@ fun Operation.toOperationEntity(): OperationEntity {
         category = this.category,
         date = this.date.toString(),
         note = this.note,
-        createdAt = this.createdAt.epochSeconds,
+        createdAt = this.createdAt.toEpochMilliseconds(),
         linkedOperationId = this.linkedOperationId,
         toAccountId = this.toAccountId
     )

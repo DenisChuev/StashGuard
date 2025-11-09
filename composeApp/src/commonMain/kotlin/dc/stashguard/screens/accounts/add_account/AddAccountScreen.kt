@@ -45,7 +45,9 @@ import androidx.compose.ui.unit.dp
 import co.touchlab.kermit.Logger
 import dc.stashguard.model.Account
 import dc.stashguard.util.formatBalanceWithSpaces
+import dc.stashguard.util.toBalanceDouble
 import org.koin.compose.viewmodel.koinViewModel
+import kotlin.let
 import kotlin.math.min
 import kotlin.time.ExperimentalTime
 
@@ -247,8 +249,7 @@ private fun isValidBalanceFinal(input: String): Boolean {
     if (input.isEmpty()) return true
 
     return try {
-        val value = input.replace(" ", "").toDouble()
-        value in -1000000000.0..1000000000.0
+        return input.toBalanceDouble()?.let { it in -1000000000.0..1000000000.0 } == true
     } catch (e: NumberFormatException) {
         false
     }

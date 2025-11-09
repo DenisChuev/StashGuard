@@ -20,7 +20,7 @@ data class AccountEntity(
     val color: Int,
     val isDebt: Boolean = false,
     @ColumnInfo(name = "created_at")
-    val createdAt: Long = DateUtils.currentDateMillis(),
+    val createdAt: Long = DateUtils.currentInstantMillis(),
 )
 
 object RoomConverters {

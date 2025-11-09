@@ -29,7 +29,7 @@ data class CategoryEntity(
     val type: CategoryType,
 
     @ColumnInfo(name = "created_at")
-    val createdAt: Long = DateUtils.currentDateMillis()
+    val createdAt: Long = DateUtils.currentInstantMillis()
 )
 
 @Serializable

@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import dc.stashguard.model.toAccountEntity
+import dc.stashguard.util.toBalanceDouble
 import dc.stashguard.util.toBalanceString
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
@@ -122,7 +123,7 @@ class EditAccountViewModel(
             return false
         }
 
-        val balance = balanceString.toDoubleOrNull()
+        val balance = balanceString.toBalanceDouble()
         if (balance == null) {
             _error.value = "Balance must be a valid number."
             return false

@@ -10,6 +10,7 @@ import dc.stashguard.screens.accounts.add_account.AddAccountViewModel
 import dc.stashguard.screens.accounts.details.DetailsAccountViewModel
 import dc.stashguard.screens.accounts.edit_account.EditAccountViewModel
 import dc.stashguard.screens.categories.CategoriesViewModel
+import dc.stashguard.screens.operations.OperationsViewModel
 import dc.stashguard.screens.operations.add_operation.AddOperationViewModel
 import org.koin.core.context.startKoin
 import org.koin.core.module.Module
@@ -47,6 +48,7 @@ val viewModelModule = module {
     }
 
     viewModel { CategoriesViewModel(get()) }
+    viewModel { OperationsViewModel(get(), get()) }
 }
 
 expect fun platformModule(): Module

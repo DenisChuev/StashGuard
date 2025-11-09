@@ -14,6 +14,9 @@ interface OperationDao {
     suspend fun insertOperations(operations: List<OperationEntity>)
 
     // Read
+    @Query("SELECT * FROM operations")
+    fun getAllOperations(): Flow<List<OperationEntity>>
+
     @Query("SELECT * FROM operations WHERE account_id = :accountId ORDER BY date DESC, created_at DESC")
     fun getOperationsByAccount(accountId: String): Flow<List<OperationEntity>>
 

@@ -176,7 +176,7 @@ class AddOperationViewModel(
 
     private suspend fun saveTransferOperation(amount: Double, state: OperationState) {
         val transferId = Uuid.random().toString()
-        val currentTime = DateUtils.currentDateMillis()
+        val currentTime = DateUtils.currentInstantMillis()
 
         val expenseOperation = OperationEntity(
             accountId = accountId,
