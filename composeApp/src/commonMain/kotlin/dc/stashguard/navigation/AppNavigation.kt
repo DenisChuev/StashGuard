@@ -24,6 +24,7 @@ import dc.stashguard.screens.accounts.edit_account.EditAccountScreen
 import dc.stashguard.screens.categories.CategoriesScreen
 import dc.stashguard.screens.operations.OperationsScreen
 import dc.stashguard.screens.operations.add_operation.AddOperationScreen
+import dc.stashguard.screens.operations.edit_operation.EditOperationScreen
 
 val mainTabRoutes = setOf(
     AccountsTab.ROUTE,
@@ -108,13 +109,6 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                 )
             }
 
-            // Operations Tab
-            composable<OperationsTab> {
-                OperationsScreen(
-                    onNavigateBack = { navController.navigateTo(AccountsTab) }
-                )
-            }
-
             // Nested navigation for Accounts tab
             composable<EditAccount> { backStackEntry ->
                 val editAccount = backStackEntry.toRoute<EditAccount>()
@@ -126,6 +120,7 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                 )
             }
 
+            // Nested navigation for Accounts tab
             composable<DetailsAccount> { backStackEntry ->
                 val detailsAccount = backStackEntry.toRoute<DetailsAccount>()
                 DetailsAccountScreen(
@@ -142,6 +137,7 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                 )
             }
 
+            // Nested navigation for Accounts tab
             composable<AddAccount> {
                 AddAccountScreen(
                     onNavigateBack = {
@@ -150,6 +146,17 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                 )
             }
 
+            // Operations Tab
+            composable<OperationsTab> {
+                OperationsScreen(
+                    onEditOperation = { accountId, operationId, operationType ->
+                        navController.navigate(EditOperation(accountId, operationId, operationType))
+                    },
+                    onNavigateBack = { navController.navigateTo(AccountsTab) }
+                )
+            }
+
+            // Nested navigation for Operations tab
             composable<AddOperation> { backStackEntry ->
                 val addOperation = backStackEntry.toRoute<AddOperation>()
                 AddOperationScreen(
@@ -161,9 +168,18 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                 )
             }
 
+            // Nested navigation for Operations tab
+            composable<EditOperation> { backStackEntry ->
+                val editOperation = backStackEntry.toRoute<EditOperation>()
+                EditOperationScreen(
+                    operationId = editOperation.operationId,
+                    onNavigateBack = { navController.popBackStack() })
+            }
+
+            // Categories Tab
             composable<CategoriesTab> {
                 CategoriesScreen(
-                    onNavigateBack = { /* Not needed for tab navigation */ }
+                    onNavigateBack = { }
                 )
             }
         }

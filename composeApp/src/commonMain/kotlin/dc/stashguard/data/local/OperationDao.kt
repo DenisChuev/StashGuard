@@ -57,4 +57,7 @@ interface OperationDao {
     // If you need to get operations by date range for statistics
     @Query("SELECT * FROM operations WHERE account_id = :accountId AND date BETWEEN :startDate AND :endDate ORDER BY date DESC")
     fun getOperationsByDateRange(accountId: String, startDate: String, endDate: String): Flow<List<OperationEntity>>
+
+    @Update
+    suspend fun updateOperations(operations: List<OperationEntity>)
 }

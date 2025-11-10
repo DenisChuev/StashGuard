@@ -12,6 +12,7 @@ import dc.stashguard.screens.accounts.edit_account.EditAccountViewModel
 import dc.stashguard.screens.categories.CategoriesViewModel
 import dc.stashguard.screens.operations.OperationsViewModel
 import dc.stashguard.screens.operations.add_operation.AddOperationViewModel
+import dc.stashguard.screens.operations.edit_operation.EditOperationViewModel
 import org.koin.core.context.startKoin
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.viewModel
@@ -49,6 +50,7 @@ val viewModelModule = module {
 
     viewModel { CategoriesViewModel(get()) }
     viewModel { OperationsViewModel(get(), get()) }
+    viewModel { (operationId: String) -> EditOperationViewModel(get(), get(), get(), operationId) }
 }
 
 expect fun platformModule(): Module

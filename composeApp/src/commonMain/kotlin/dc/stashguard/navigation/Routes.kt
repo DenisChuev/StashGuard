@@ -37,3 +37,10 @@ data class AddOperation(
     val accountId: String,
     val operationType: OperationType
 )
+
+@Serializable
+data class EditOperation(
+    val accountId: String,
+    val operationId: String,
+    val operationType: OperationType
+)

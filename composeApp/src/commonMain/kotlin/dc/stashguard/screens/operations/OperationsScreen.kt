@@ -3,6 +3,7 @@
 package dc.stashguard.screens.operations
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,12 +23,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.CallMade
 import androidx.compose.material.icons.automirrored.filled.CallReceived
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CallMade
-import androidx.compose.material.icons.filled.CallReceived
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Card
@@ -42,7 +39,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBarDefaults
@@ -60,11 +56,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dc.stashguard.model.Operation
 import dc.stashguard.model.OperationType
-import dc.stashguard.screens.operations.add_operation.FilterChip
 import dc.stashguard.util.formatForOperations
 import dc.stashguard.util.formatRelativeTime
 import dc.stashguard.util.toBalanceString
-import kotlinx.datetime.format
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -72,6 +66,7 @@ import kotlin.time.Instant
 
 @Composable
 fun OperationsScreen(
+    onEditOperation: (accountId: String, operationId: String, operationType: OperationType) -> Unit,
     onNavigateBack: () -> Unit,
     viewModel: OperationsViewModel = koinViewModel()
 ) {
@@ -131,7 +126,9 @@ fun OperationsScreen(
             } else {
                 LazyColumn(modifier = Modifier.weight(1f)) {
                     items(filteredOperations) { operation ->
-                        OperationItem(operation = operation)
+                        OperationItem(operation = operation, onClick = {
+                            onEditOperation(operation.accountId, operation.id, operation.type)
+                        })
                     }
                 }
             }
@@ -145,7 +142,7 @@ fun OperationsEmptyState(
     hasOperations: Boolean = false
 ) {
     Column(
-        modifier = modifier,
+        modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -172,12 +169,14 @@ fun OperationsEmptyState(
 @Composable
 fun OperationItem(
     operation: Operation,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .clickable { onClick() },
         elevation = CardDefaults.cardElevation(2.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
@@ -284,14 +283,6 @@ fun OperationsHeader(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.background(MaterialTheme.colorScheme.primary)) {
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "Recent Operations",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
-
         // Type-based statistics
         val income = operations.filter { it.type == OperationType.REVENUE }.sumOf { it.amount }
         val expense = operations.filter { it.type == OperationType.EXPENSE }.sumOf { it.amount }
