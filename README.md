@@ -6,6 +6,10 @@ Designed with Kotlin Multiplatform, it helps you save intentionally, track goals
 
 ---
 
+https://github.com/user-attachments/assets/573745fb-1ff7-424b-8a81-63d43673763b
+
+---
+
 ## 🛠️ Tech Stack
 
 | Category | Technology                                                            |
@@ -17,3 +21,4 @@ Designed with Kotlin Multiplatform, it helps you save intentionally, track goals
 | **Data Storage** | Local: Room / SQLite<br>Remote: Firebase (optional) or private server |
 | **Authentication** | Email/Password + Google Sign-In                                       |
 | **Privacy & Security** | End-to-end encryption, local-first design                             |
+
