@@ -32,12 +32,12 @@ Dependency versions live in `gradle/libs.versions.toml`.
 - ViewModels that take parameters (such as `accountId`) are declared as `viewModel { (id: String) -> ... }`, and screens get them with `koinViewModel { parametersOf(id) }`.
 - `initKoin` is called once at app startup: from `StashGuardApp.onCreate()` (in `:androidApp`) on Android, and from `iOSApp.init()` in Swift on iOS (through `setupKoin()` in `MainViewController.kt`).
 
-**Navigation** uses type-safe Compose Navigation:
-- Routes are `@Serializable` objects or data classes in `navigation/Routes.kt`.
-- All destinations are registered in a single `NavHost` in `navigation/AppNavigation.kt`.
-- The bottom bar appears only on the three tab routes. These are matched by the string `ROUTE` constants on `AccountsTab`, `OperationsTab` and `CategoriesTab`, and those constants must match the fully qualified class name.
-- `NavController.navigateTo()` handles tab switching, with save/restore of state.
-- Screens never touch the `NavController`. They receive navigation lambdas (`onNavigateBack`, `onNavigateToX`).
+**Navigation** uses Navigation 3 (`org.jetbrains.androidx.navigation3`):
+- Routes are `@Serializable` objects or data classes implementing `NavKey` in `navigation/Routes.kt`. A new route must also be registered in the polymorphic `SerializersModule` in `navigation/NavigationState.kt`; iOS has no reflection, so an unregistered route crashes when the back stack is saved.
+- Screens are registered in the `entryProvider { entry<Route> { ... } }` block in `navigation/AppNavigation.kt`, rendered by a single `NavDisplay`.
+- `NavigationState` keeps one back stack per bottom-bar tab (`BottomNavigationItem` in `navigation/BottomNavigationItems.kt`). `navigate(key)` switches tab when `key` is a tab and otherwise pushes onto the current tab's stack; `goBack()` pops, or returns to the first tab from another tab's root. The bottom bar shows only at a tab root.
+- Each stack is decorated with `rememberViewModelStoreNavEntryDecorator()`, which gives every entry its own `ViewModelStore`. Without it, `koinViewModel { parametersOf(id) }` would reuse one ViewModel for every screen of the same type.
+- Screens never touch the navigation state. They receive navigation lambdas (`onNavigateBack`, `onNavigateToX`).
 
 **Persistence** uses Room KMP with the bundled SQLite driver:
 - The database is defined in `data/local/AppDatabase.kt`. The platform builders (`DatabaseBuilder.{android,ios}.kt`) supply the database file path.

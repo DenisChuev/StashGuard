@@ -1,46 +1,39 @@
 package dc.stashguard.navigation
 
+import androidx.navigation3.runtime.NavKey
 import dc.stashguard.model.OperationType
 import kotlinx.serialization.Serializable
 
 // Tabs
 @Serializable
-object AccountsTab {
-    const val ROUTE = "dc.stashguard.navigation.AccountsTab"
-    const val TITLE = "Accounts"
-}
+data object AccountsTab : NavKey
 
 @Serializable
-object OperationsTab {
-    const val ROUTE = "dc.stashguard.navigation.OperationsTab"
-    const val TITLE = "Operations"
-}
+data object OperationsTab : NavKey
 
 @Serializable
-object CategoriesTab{
-    const val ROUTE = "dc.stashguard.navigation.CategoriesTab"
-    const val TITLE = "Categories"
-}
+data object CategoriesTab : NavKey
 
 // Nested Accounts routes
 @Serializable
-data class EditAccount(val accountId: String)
+data class EditAccount(val accountId: String) : NavKey
 
 @Serializable
-object AddAccount
+data object AddAccount : NavKey
 
 @Serializable
-data class DetailsAccount(val accountId: String)
+data class DetailsAccount(val accountId: String) : NavKey
 
+// Nested Operations routes
 @Serializable
 data class AddOperation(
     val accountId: String,
     val operationType: OperationType
-)
+) : NavKey
 
 @Serializable
 data class EditOperation(
     val accountId: String,
     val operationId: String,
     val operationType: OperationType
-)
+) : NavKey

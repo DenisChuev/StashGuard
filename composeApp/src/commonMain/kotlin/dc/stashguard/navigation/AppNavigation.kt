@@ -7,15 +7,9 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavController
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.toRoute
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.ui.NavDisplay
 import co.touchlab.kermit.Logger
 import dc.stashguard.screens.accounts.accounts_list.AccountsScreen
 import dc.stashguard.screens.accounts.add_account.AddAccountScreen
@@ -26,37 +20,22 @@ import dc.stashguard.screens.operations.OperationsScreen
 import dc.stashguard.screens.operations.add_operation.AddOperationScreen
 import dc.stashguard.screens.operations.edit_operation.EditOperationScreen
 
-val mainTabRoutes = setOf(
-    AccountsTab.ROUTE,
-    OperationsTab.ROUTE,
-    CategoriesTab.ROUTE
-)
-
-fun isMainTabRoute(route: String?): Boolean {
-    return route in mainTabRoutes
-}
-
 private val logger = Logger.withTag("AppNavigation")
 
 @Composable
 fun AppNavigation(modifier: Modifier = Modifier) {
-    val navController = rememberNavController()
+    val navigationState = rememberNavigationState(
+        tabs = BottomNavigationItem.entries.map { it.tab }
+    )
 
-    // Track current route to highlight correct bottom nav item
-    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
-
-    // Check if current route is a main tab (should show bottom nav)
-    val shouldShowBottomBar = remember(currentRoute) {
-        isMainTabRoute(currentRoute)
-    }
-
-    logger.d("current route: $currentRoute")
+    logger.d("selected tab: ${navigationState.selectedTab}")
 
     Scaffold(
+        modifier = modifier,
         bottomBar = {
-            if (shouldShowBottomBar) {
+            if (navigationState.isAtTabRoot) {
                 NavigationBar {
-                    bottomNavigationItems.forEach { item ->
+                    BottomNavigationItem.entries.forEach { item ->
                         NavigationBarItem(
                             icon = {
                                 Icon(
@@ -65,133 +44,93 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                                 )
                             },
                             label = { Text(item.title) },
-                            selected = currentRoute == item.route,
-                            onClick = {
-                                if (currentRoute != item.route) {
-                                    when (item) {
-                                        is BottomNavigationItem.Accounts -> {
-                                            navController.navigateTo(AccountsTab)
-                                        }
-
-                                        is BottomNavigationItem.Operations -> {
-                                            navController.navigateTo(OperationsTab)
-                                        }
-
-                                        BottomNavigationItem.Categories -> {
-                                            navController.navigateTo(CategoriesTab)
-                                        }
-                                    }
-                                }
-                            }
+                            selected = navigationState.selectedTab == item.tab,
+                            onClick = { navigationState.navigate(item.tab) }
                         )
                     }
                 }
             }
         },
     ) { paddingValues ->
-        NavHost(
-            navController = navController,
-            startDestination = AccountsTab,
-            modifier = Modifier.padding(paddingValues)
-        ) {
+        val entryProvider = entryProvider {
             // Accounts Tab
-            composable<AccountsTab> {
+            entry<AccountsTab> {
                 AccountsScreen(
                     onNavigateToAccountDetails = { accountId ->
-                        navController.navigate(DetailsAccount(accountId))
+                        navigationState.navigate(DetailsAccount(accountId))
                     },
                     onNavigateToEditAccount = { accountId ->
-                        navController.navigate(EditAccount(accountId))
+                        navigationState.navigate(EditAccount(accountId))
                     },
                     onNavigateToAddAccount = {
-                        navController.navigate(AddAccount)
+                        navigationState.navigate(AddAccount)
                     }
                 )
             }
 
-            // Nested navigation for Accounts tab
-            composable<EditAccount> { backStackEntry ->
-                val editAccount = backStackEntry.toRoute<EditAccount>()
+            entry<EditAccount> { key ->
                 EditAccountScreen(
-                    accountId = editAccount.accountId,
-                    onNavigateBack = {
-                        navController.popBackStack()
-                    }
+                    accountId = key.accountId,
+                    onNavigateBack = navigationState::goBack
                 )
             }
 
-            // Nested navigation for Accounts tab
-            composable<DetailsAccount> { backStackEntry ->
-                val detailsAccount = backStackEntry.toRoute<DetailsAccount>()
+            entry<DetailsAccount> { key ->
                 DetailsAccountScreen(
-                    accountId = detailsAccount.accountId,
+                    accountId = key.accountId,
                     onNavigateToEditAccount = { accountId ->
-                        navController.navigate(EditAccount(accountId))
+                        navigationState.navigate(EditAccount(accountId))
                     },
                     onNavigateAddOperation = { accountId, operationType ->
-                        navController.navigate(AddOperation(accountId, operationType))
+                        navigationState.navigate(AddOperation(accountId, operationType))
                     },
-                    onNavigateBack = {
-                        navController.popBackStack()
-                    }
+                    onNavigateBack = navigationState::goBack
                 )
             }
 
-            // Nested navigation for Accounts tab
-            composable<AddAccount> {
+            entry<AddAccount> {
                 AddAccountScreen(
-                    onNavigateBack = {
-                        navController.popBackStack()
-                    }
+                    onNavigateBack = navigationState::goBack
                 )
             }
 
             // Operations Tab
-            composable<OperationsTab> {
+            entry<OperationsTab> {
                 OperationsScreen(
                     onEditOperation = { accountId, operationId, operationType ->
-                        navController.navigate(EditOperation(accountId, operationId, operationType))
+                        navigationState.navigate(EditOperation(accountId, operationId, operationType))
                     },
-                    onNavigateBack = { navController.navigateTo(AccountsTab) }
+                    onNavigateBack = { navigationState.navigate(AccountsTab) }
                 )
             }
 
-            // Nested navigation for Operations tab
-            composable<AddOperation> { backStackEntry ->
-                val addOperation = backStackEntry.toRoute<AddOperation>()
+            entry<AddOperation> { key ->
                 AddOperationScreen(
-                    accountId = addOperation.accountId,
-                    operationType = addOperation.operationType,
-                    onNavigateBack = {
-                        navController.popBackStack()
-                    }
+                    accountId = key.accountId,
+                    operationType = key.operationType,
+                    onNavigateBack = navigationState::goBack
                 )
             }
 
-            // Nested navigation for Operations tab
-            composable<EditOperation> { backStackEntry ->
-                val editOperation = backStackEntry.toRoute<EditOperation>()
+            entry<EditOperation> { key ->
                 EditOperationScreen(
-                    operationId = editOperation.operationId,
-                    onNavigateBack = { navController.popBackStack() })
+                    operationId = key.operationId,
+                    onNavigateBack = navigationState::goBack
+                )
             }
 
             // Categories Tab
-            composable<CategoriesTab> {
+            entry<CategoriesTab> {
                 CategoriesScreen(
                     onNavigateBack = { }
                 )
             }
         }
-    }
-}
 
-fun NavController.navigateTo(route: Any) {
-    this.navigate(route = route) {
-        popUpTo(graph.findStartDestination().id) {
-            saveState = true
-        }
-        launchSingleTop = true
-        restoreState = true
+        NavDisplay(
+            entries = navigationState.rememberEntries(entryProvider),
+            onBack = navigationState::goBack,
+            modifier = Modifier.padding(paddingValues)
+        )
     }
 }
