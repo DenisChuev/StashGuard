@@ -6,11 +6,11 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface AccountDao {
     // Query to get all accounts, returning a Flow for reactive updates
-    @Query("SELECT * FROM accounts ORDER BY name COLLATE NOCASE ASC")
+    @Query("SELECT * FROM accounts ORDER BY position ASC, name COLLATE NOCASE ASC")
     fun getAllAccounts(): Flow<List<AccountEntity>>
 
     // Query to get all accounts synchronously
-    @Query("SELECT * FROM accounts ORDER BY name COLLATE NOCASE ASC")
+    @Query("SELECT * FROM accounts ORDER BY position ASC, name COLLATE NOCASE ASC")
     suspend fun getAllAccountsSuspend(): List<AccountEntity>
 
     // Query to get a specific account by ID
@@ -19,6 +19,18 @@ interface AccountDao {
 
     @Query("SELECT * FROM accounts WHERE id = :id")
     suspend fun getAccountByIdOnce(id: String): AccountEntity?
+
+    @Query("SELECT COALESCE(MAX(position), -1) FROM accounts")
+    suspend fun getMaxPosition(): Int
+
+    @Query("UPDATE accounts SET position = :position WHERE id = :id")
+    suspend fun updatePosition(id: String, position: Int)
+
+    // Persist a new order: each account's position becomes its index in `orderedIds`
+    @Transaction
+    suspend fun updatePositions(orderedIds: List<String>) {
+        orderedIds.forEachIndexed { index, id -> updatePosition(id, index) }
+    }
 
     // Insert a single account
     @Insert(onConflict = OnConflictStrategy.REPLACE)

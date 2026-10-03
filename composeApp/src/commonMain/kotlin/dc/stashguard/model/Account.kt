@@ -26,6 +26,7 @@ data class Account(
     val color: Color,
     val isDebt: Boolean = false,
     val createdAt: Instant = DateUtils.currentInstant(),
+    val position: Int = 0,
 )
 
 fun Account.toAccountEntity(): AccountEntity {
@@ -35,7 +36,8 @@ fun Account.toAccountEntity(): AccountEntity {
         balance = this.balance,
         color = this.color.toArgb(),
         isDebt = this.isDebt,
-        createdAt = this.createdAt.epochSeconds
+        createdAt = this.createdAt.epochSeconds,
+        position = this.position
     )
 }
 
@@ -46,6 +48,7 @@ fun AccountEntity.toAccount(): Account {
         balance = this.balance,
         color = Color(this.color),
         isDebt = this.isDebt,
-        createdAt = Instant.fromEpochSeconds(this.createdAt)
+        createdAt = Instant.fromEpochSeconds(this.createdAt),
+        position = this.position
     )
 }

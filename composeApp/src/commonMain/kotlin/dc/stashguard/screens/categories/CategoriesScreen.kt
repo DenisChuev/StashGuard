@@ -210,7 +210,7 @@ fun CategoryListItem(
                         "school" -> Icons.Default.School
                         "work" -> Icons.Default.Work
                         "computer" -> Icons.Default.Computer
-                        "trending_up" -> Icons.Default.TrendingUp
+                        "trending_up" -> Icons.AutoMirrored.Filled.TrendingUp
                         "card_giftcard" -> Icons.Default.CardGiftcard
                         "swap_horiz" -> Icons.Default.SwapHoriz
                         else -> Icons.Default.Category

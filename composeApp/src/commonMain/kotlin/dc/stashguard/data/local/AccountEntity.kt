@@ -21,6 +21,9 @@ data class AccountEntity(
     val isDebt: Boolean = false,
     @ColumnInfo(name = "created_at")
     val createdAt: Long = DateUtils.currentInstantMillis(),
+    // User-defined order in the accounts list (drag and drop); lower comes first.
+    @ColumnInfo(defaultValue = "0")
+    val position: Int = 0,
 )
 
 object RoomConverters {

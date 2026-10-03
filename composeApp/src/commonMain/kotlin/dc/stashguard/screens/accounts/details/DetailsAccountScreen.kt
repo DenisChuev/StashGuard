@@ -10,6 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.CallReceived
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
@@ -130,7 +131,7 @@ fun DetailsTopAppBar(
                 onClick = onNavigateBack,
                 enabled = !isLoading
             ) {
-                Icon(Icons.Default.ArrowBack, "Back")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
             }
         },
         actions = {
@@ -181,9 +182,6 @@ fun AccountDetailsContent(
             operations = recentOperations,
             isEmpty = recentOperations.isEmpty()
         )
-
-        // Account Information Section
-//        AccountInformationSection(account = account)
     }
 }
 

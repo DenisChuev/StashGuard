@@ -20,7 +20,9 @@ class AddAccountViewModel(private val accountDao: AccountDao) : ViewModel() {
         viewModelScope.launch {
             try {
                 logger.d { "Inserting account: $account" }
-                accountDao.insertAccount(account.toAccountEntity())
+                // New accounts go to the end of the user-defined order
+                val position = accountDao.getMaxPosition() + 1
+                accountDao.insertAccount(account.copy(position = position).toAccountEntity())
                 logger.d { "Account inserted successfully" }
                 onSuccess()
             } catch (e: Exception) {

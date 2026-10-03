@@ -2,6 +2,7 @@
 
 package dc.stashguard.data.local
 
+import androidx.room.AutoMigration
 import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
@@ -17,8 +18,11 @@ import kotlin.uuid.ExperimentalUuidApi
         AccountEntity::class,
         OperationEntity::class,
         CategoryEntity::class],
-    version = 3,
-    exportSchema = true
+    version = 4,
+    exportSchema = true,
+    autoMigrations = [
+        AutoMigration(from = 3, to = 4), // accounts.position
+    ]
 )
 @TypeConverters(RoomConverters::class)
 @ConstructedBy(AppDatabaseConstructor::class)

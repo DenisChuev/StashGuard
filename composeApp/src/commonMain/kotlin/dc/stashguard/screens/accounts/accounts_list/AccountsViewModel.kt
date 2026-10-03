@@ -30,6 +30,12 @@ class AccountsViewModel(private val accountDao: AccountDao) : ViewModel() {
         }
     }
 
+    fun reorderAccounts(orderedIds: List<String>) {
+        viewModelScope.launch {
+            accountDao.updatePositions(orderedIds)
+        }
+    }
+
     fun deleteAccount(account: Account) {
         viewModelScope.launch {
             accountDao.deleteAccount(account.toAccountEntity())

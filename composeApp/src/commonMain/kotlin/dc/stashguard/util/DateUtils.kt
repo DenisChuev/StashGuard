@@ -135,7 +135,7 @@ object DateUtils {
             LocalDate.Format {
                 monthName(MonthNames.ENGLISH_ABBREVIATED)
                 chars(" ")
-                dayOfMonth()
+                day()
                 chars(", ")
                 year()
             }
@@ -150,7 +150,7 @@ object DateUtils {
             LocalDate.Format {
                 monthNumber()
                 char('/')
-                dayOfMonth()
+                day()
                 char('/')
                 year()
             }
@@ -174,7 +174,7 @@ object DateUtils {
             LocalDateTime.Format {
                 monthName(MonthNames.ENGLISH_ABBREVIATED)
                 chars(" ")
-                dayOfMonth()
+                day()
                 chars(", ")
                 year()
                 chars(", ")
