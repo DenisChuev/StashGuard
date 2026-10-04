@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
 import dc.stashguard.core.domain.model.Account
 import dc.stashguard.core.domain.repository.AccountRepository
+import dc.stashguard.core.domain.usecase.DeleteAccountUseCase
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -12,7 +13,10 @@ import kotlinx.coroutines.launch
 
 private val logger = Logger.withTag("AccountsViewModel")
 
-class AccountsViewModel(private val accountRepository: AccountRepository) : ViewModel() {
+class AccountsViewModel(
+    private val accountRepository: AccountRepository,
+    private val deleteAccountUseCase: DeleteAccountUseCase,
+) : ViewModel() {
     val accounts: StateFlow<List<Account>> = accountRepository.observeAccounts().stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -33,7 +37,7 @@ class AccountsViewModel(private val accountRepository: AccountRepository) : View
 
     fun deleteAccount(account: Account) {
         viewModelScope.launch {
-            accountRepository.deleteAccount(account.id)
+            deleteAccountUseCase(account.id)
         }
     }
 }

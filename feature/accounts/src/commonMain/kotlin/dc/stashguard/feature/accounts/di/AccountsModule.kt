@@ -8,9 +8,9 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 val accountsModule = module {
-    viewModel { AccountsViewModel(get()) }
+    viewModel { AccountsViewModel(get(), get()) }
     viewModel { AddAccountViewModel(get()) }
-    viewModel { (accountId: String) -> EditAccountViewModel(get(), accountId) }
+    viewModel { (accountId: String) -> EditAccountViewModel(get(), get(), accountId) }
 
     viewModel { (accountId: String) ->
         DetailsAccountViewModel(

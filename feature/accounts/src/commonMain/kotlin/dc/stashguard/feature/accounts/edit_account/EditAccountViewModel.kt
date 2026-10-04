@@ -11,6 +11,7 @@ import dc.stashguard.core.common.toBalanceDouble
 import dc.stashguard.core.common.toBalanceString
 import dc.stashguard.core.domain.model.Account
 import dc.stashguard.core.domain.repository.AccountRepository
+import dc.stashguard.core.domain.usecase.DeleteAccountUseCase
 import dc.stashguard.core.ui.color
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -26,6 +27,7 @@ private val logger = Logger.withTag("EditAccountViewModel")
 
 class EditAccountViewModel(
     private val accountRepository: AccountRepository,
+    private val deleteAccountUseCase: DeleteAccountUseCase,
     private val accountId: String
 ) : ViewModel() {
 
@@ -156,7 +158,7 @@ class EditAccountViewModel(
         logger.d("Trying to delete account: $accountId")
         viewModelScope.launch {
             try {
-                accountRepository.deleteAccount(accountId)
+                deleteAccountUseCase(accountId)
                 onSuccess()
             } catch (e: Exception) {
                 logger.e("Error deleting account", e)

@@ -33,7 +33,8 @@ class UpdateOperationUseCase(
             amount = amount,
             category = categoryId,
             date = date,
-            note = note.ifBlank { "" }
+            note = note.ifBlank { "" },
+            toAccountId = newToAccountId ?: original.toAccountId
         )
 
         if (original.type == OperationType.TRANSFER) {
@@ -42,7 +43,9 @@ class UpdateOperationUseCase(
                     ?.firstOrNull { it.accountId == original.toAccountId && it.linkedOperationId == original.linkedOperationId }
                     ?: throw LinkedOperationNotFoundException()
 
+            // The other side of the transfer lives in the destination account, so it moves with it
             val updatedLinkedOp = linkedOp.copy(
+                accountId = toAccountId,
                 amount = amount,
                 date = updatedOperation.date,
                 note = updatedOperation.note,

@@ -5,7 +5,6 @@ import dc.stashguard.core.domain.model.AccountStatistics
 import dc.stashguard.core.domain.model.Operation
 import dc.stashguard.core.domain.model.OperationType
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.minus
 
 /** Revenue and expense totals over the last 30 days. */
 class CalculateAccountStatisticsUseCase {
@@ -14,9 +13,7 @@ class CalculateAccountStatisticsUseCase {
         today: LocalDate = DateUtils.currentDate(),
     ): AccountStatistics {
         val last30DaysOperations = operations.filter { operation ->
-            val operationDate = operation.date
-            val daysDifference = (today - operationDate).days
-            daysDifference <= 30
+            DateUtils.daysBetween(operation.date, today) <= 30
         }
 
         val totalRevenue = last30DaysOperations
