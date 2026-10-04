@@ -14,7 +14,7 @@ https://github.com/user-attachments/assets/573745fb-1ff7-424b-8a81-63d43673763b
 
 - **Accounts** — create, edit and color-code accounts, mark debt accounts, and see the total balance at a glance
 - **Custom order** — long-press an account and drag it to rearrange the list
-- **Operations** — record revenue, expenses and transfers between accounts; balances update automatically
+- **Operations** — record revenue, expenses and transfers between accounts, and edit them later; balances update automatically
 - **Categories** — organize operations with categories (a default set is created on first launch)
 - **Account details** — last 30 days of revenue, expenses and net change, plus recent activity
 - **Offline-first** — all data stays on the device
@@ -31,7 +31,7 @@ https://github.com/user-attachments/assets/573745fb-1ff7-424b-8a81-63d43673763b
 | **Data Storage** | Room (KMP) with bundled SQLite |
 | **Dependency Injection** | Koin |
 | **Logging** | Kermit |
-| **Build** | Gradle 9.4, AGP 9.2, Kotlin 2.4 |
+| **Build** | Gradle 9.6, AGP 9.4, Kotlin 2.4 |
 
 ## 📁 Project Structure
 
@@ -52,6 +52,7 @@ build-logic/            Gradle convention plugins (stashguard.kmp.library / .com
 
 Dependencies point inwards: `feature:*` → `core:domain` ← `core:data` → `core:database`.
 Features never see Room or the data layer; `composeApp` wires everything together with Koin.
+Balance changes (adding or editing operations, transfers, deleting accounts) go through use cases in `core:domain`.
 
 ## 🚀 Getting Started
 
@@ -65,6 +66,18 @@ Requirements: JDK 17+, Android Studio (or the Android SDK with API 37), and Xcod
 To run on iOS, open `iosApp/iosApp.xcodeproj` in Xcode and run the `iosApp` scheme.
 
 ## 🗺️ Roadmap
+
+**Phase 1 — first store release (autumn 2026)**
+
+- MVI presentation layer and kotlin-inject for DI
+- CI with tests (`commonTest`, Turbine) and code coverage
+- Currency per account with exchange rates
+- Reports and charts by category and period
+- Recurring operations
+- Biometric lock and database encryption
+- Release in Google Play, App Store, RuStore and Huawei AppGallery
+
+**Later**
 
 - Web target (Compose for Web / Wasm)
 - Sync: Firebase (optional) or private server
