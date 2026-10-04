@@ -4,9 +4,6 @@
 StashGuard is a personal finance app built for people who think ahead. 
 Designed with Kotlin Multiplatform, it helps you save intentionally, track goals with purpose, and move confidently toward financial independence — without stress or complexity.
 
----
-
-https://github.com/user-attachments/assets/573745fb-1ff7-424b-8a81-63d43673763b
 
 ---
 
