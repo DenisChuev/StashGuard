@@ -427,7 +427,9 @@ fun AddOperationContent(
     onDateChange: (LocalDate) -> Unit,
     onNoteChange: (String) -> Unit,
     onSave: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    // Editing the receiving side of a transfer: the picked account is the sender
+    isIncomingTransfer: Boolean = false
 ) {
     Column(
         modifier = modifier
@@ -459,6 +461,7 @@ fun AddOperationContent(
         // To Account Selection (for Transfer)
         if (operationType == OperationType.TRANSFER) {
             TransferAccountSection(
+                title = if (isIncomingTransfer) "Transfer From" else "Transfer To",
                 toAccountId = state.toAccountId,
                 availableAccounts = availableAccounts,
                 currentAccountId = "", // You'll need to pass the current account ID
@@ -557,6 +560,7 @@ fun AmountInputSection(
 
 @Composable
 fun TransferAccountSection(
+    title: String,
     toAccountId: String,
     availableAccounts: List<Account>,
     currentAccountId: String,
@@ -573,7 +577,7 @@ fun TransferAccountSection(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Transfer To",
+                text = title,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )

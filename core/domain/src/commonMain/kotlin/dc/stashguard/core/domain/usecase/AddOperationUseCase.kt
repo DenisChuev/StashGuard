@@ -90,7 +90,8 @@ class AddOperationUseCase(
             note = note,
             createdAt = currentTime,
             linkedOperationId = transferId,
-            toAccountId = fromAccountId
+            toAccountId = fromAccountId,
+            isIncoming = true
         )
 
         operationRepository.addOperations(listOf(expenseOperation, revenueOperation))

@@ -16,7 +16,11 @@ class UpdateOperationUseCase(
     private val accountRepository: AccountRepository,
     private val operationRepository: OperationRepository,
 ) {
-    /** @throws LinkedOperationNotFoundException if [original] is a transfer whose other side is missing. */
+    /**
+     * @param toAccountId for a transfer, the other account: the destination when [original] is
+     *   the sending side, the source when it is the receiving side. Ignored for other types.
+     * @throws LinkedOperationNotFoundException if [original] is a transfer whose other side is missing.
+     */
     suspend operator fun invoke(
         original: Operation,
         amount: Double,
@@ -25,53 +29,61 @@ class UpdateOperationUseCase(
         note: String,
         toAccountId: String,
     ) {
-        val oldAmount = original.amount
-        val oldToAccountId = original.toAccountId
-        val newToAccountId = if (original.type == OperationType.TRANSFER) toAccountId else null
-
         val updatedOperation = original.copy(
             amount = amount,
             category = categoryId,
             date = date,
-            note = note.ifBlank { "" },
-            toAccountId = newToAccountId ?: original.toAccountId
+            note = note.ifBlank { "" }
         )
 
-        if (original.type == OperationType.TRANSFER) {
-            val linkedOp =
-                original.linkedOperationId?.let { operationRepository.getLinkedOperations(it) }
-                    ?.firstOrNull { it.accountId == original.toAccountId && it.linkedOperationId == original.linkedOperationId }
-                    ?: throw LinkedOperationNotFoundException()
-
-            // The other side of the transfer lives in the destination account, so it moves with it
-            val updatedLinkedOp = linkedOp.copy(
-                accountId = toAccountId,
-                amount = amount,
-                date = updatedOperation.date,
-                note = updatedOperation.note,
-                toAccountId = original.accountId
-            )
-            operationRepository.updateOperations(listOf(updatedOperation, updatedLinkedOp))
-        } else {
-            operationRepository.updateOperations(listOf(updatedOperation))
-        }
-
-        val fromAccountId = original.accountId
-        val balanceChange = amount - oldAmount
-
         when (original.type) {
-            OperationType.REVENUE -> accountRepository.adjustBalance(fromAccountId, balanceChange)
-            OperationType.EXPENSE -> accountRepository.adjustBalance(fromAccountId, -balanceChange)
-            OperationType.TRANSFER -> {
-                accountRepository.adjustBalance(fromAccountId, oldAmount)
-                if (oldToAccountId != null) {
-                    accountRepository.adjustBalance(oldToAccountId, -oldAmount)
-                }
-                accountRepository.adjustBalance(fromAccountId, -amount)
-                if (newToAccountId != null) {
-                    accountRepository.adjustBalance(newToAccountId, amount)
-                }
+            OperationType.REVENUE -> {
+                operationRepository.updateOperations(listOf(updatedOperation))
+                accountRepository.adjustBalance(original.accountId, amount - original.amount)
             }
+
+            OperationType.EXPENSE -> {
+                operationRepository.updateOperations(listOf(updatedOperation))
+                accountRepository.adjustBalance(original.accountId, original.amount - amount)
+            }
+
+            OperationType.TRANSFER -> updateTransfer(original, updatedOperation, toAccountId)
         }
     }
+
+    private suspend fun updateTransfer(
+        original: Operation,
+        updatedOperation: Operation,
+        otherAccountId: String,
+    ) {
+        val linkedOp =
+            original.linkedOperationId?.let { operationRepository.getLinkedOperations(it) }
+                ?.firstOrNull { it.id != original.id }
+                ?: throw LinkedOperationNotFoundException()
+
+        // Both sides point at each other; the other side lives in the other account
+        val updatedOp = updatedOperation.copy(toAccountId = otherAccountId)
+        val updatedLinkedOp = linkedOp.copy(
+            accountId = otherAccountId,
+            amount = updatedOp.amount,
+            date = updatedOp.date,
+            note = updatedOp.note,
+            toAccountId = original.accountId
+        )
+        operationRepository.updateOperations(listOf(updatedOp, updatedLinkedOp))
+
+        // Undo the old transfer, then apply the new one, each in the right direction
+        val oldOtherAccountId = original.toAccountId
+        val (oldFrom, oldTo) = original.direction(oldOtherAccountId)
+        oldFrom?.let { accountRepository.adjustBalance(it, original.amount) }
+        oldTo?.let { accountRepository.adjustBalance(it, -original.amount) }
+
+        val (newFrom, newTo) = original.direction(otherAccountId)
+        newFrom?.let { accountRepository.adjustBalance(it, -updatedOp.amount) }
+        newTo?.let { accountRepository.adjustBalance(it, updatedOp.amount) }
+    }
+
+    /** (sender, receiver) of a transfer between this side's account and [otherAccountId]. */
+    private fun Operation.direction(otherAccountId: String?): Pair<String?, String?> =
+        if (isIncoming) otherAccountId to accountId else accountId to otherAccountId
 }

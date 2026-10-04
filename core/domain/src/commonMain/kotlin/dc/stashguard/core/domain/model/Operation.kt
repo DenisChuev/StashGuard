@@ -12,6 +12,11 @@ enum class OperationType {
     TRANSFER
 }
 
+/**
+ * A transfer is stored as two operations, one per account, sharing a [linkedOperationId].
+ * On each side [toAccountId] is the other account, and [isIncoming] tells the receiving
+ * side (true) from the sending side (false).
+ */
 data class Operation(
     val id: String,
     val accountId: String,
@@ -22,7 +27,8 @@ data class Operation(
     val note: String,
     val createdAt: Instant,
     val linkedOperationId: String? = null,
-    val toAccountId: String? = null
+    val toAccountId: String? = null,
+    val isIncoming: Boolean = false
 )
 
 /** Categories that can be picked for an operation of this type ([CategoryType.BOTH] always matches). */

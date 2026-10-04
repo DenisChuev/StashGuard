@@ -50,6 +50,7 @@ fun EditOperationScreen(
                 onNoteChange = viewModel::updateNote,
                 onSave = { viewModel.saveOperation(onNavigateBack) },
                 modifier = Modifier.padding(paddingValues),
+                isIncomingTransfer = viewModel.isIncomingTransfer(),
             )
         }
     )

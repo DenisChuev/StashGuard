@@ -21,7 +21,8 @@ internal fun OperationEntity.toDomain(): Operation {
         note = this.note,
         createdAt = Instant.fromEpochMilliseconds(this.createdAt),
         linkedOperationId = this.linkedOperationId,
-        toAccountId = this.toAccountId
+        toAccountId = this.toAccountId,
+        isIncoming = this.isIncoming
     )
 }
 
@@ -36,6 +37,7 @@ internal fun Operation.toEntity(): OperationEntity {
         note = this.note,
         createdAt = this.createdAt.toEpochMilliseconds(),
         linkedOperationId = this.linkedOperationId,
-        toAccountId = this.toAccountId
+        toAccountId = this.toAccountId,
+        isIncoming = this.isIncoming
     )
 }

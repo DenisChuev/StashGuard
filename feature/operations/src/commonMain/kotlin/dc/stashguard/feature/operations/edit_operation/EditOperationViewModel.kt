@@ -157,4 +157,8 @@ class EditOperationViewModel(
     fun getOperationType(): OperationType? {
         return originalOperation.value?.type
     }
+
+    fun isIncomingTransfer(): Boolean {
+        return originalOperation.value?.isIncoming == true
+    }
 }

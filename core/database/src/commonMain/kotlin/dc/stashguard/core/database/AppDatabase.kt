@@ -20,10 +20,11 @@ import kotlinx.coroutines.IO
         AccountEntity::class,
         OperationEntity::class,
         CategoryEntity::class],
-    version = 4,
+    version = 5,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 3, to = 4), // accounts.position
+        AutoMigration(from = 4, to = 5, spec = TransferDirectionMigration::class), // operations.is_incoming
     ]
 )
 @ConstructedBy(AppDatabaseConstructor::class)

@@ -41,5 +41,9 @@ data class OperationEntity(
     val linkedOperationId: String? = null,
 
     @ColumnInfo(name = "to_account_id")
-    val toAccountId: String? = null
+    val toAccountId: String? = null,
+
+    // For transfers - true on the receiving side, false on the sending side
+    @ColumnInfo(name = "is_incoming", defaultValue = "0")
+    val isIncoming: Boolean = false
 )
