@@ -26,7 +26,8 @@ https://github.com/user-attachments/assets/573745fb-1ff7-424b-8a81-63d43673763b
 | **Platform** | Kotlin Multiplatform (Android, iOS) |
 | **UI Framework** | Compose Multiplatform + Material 3 |
 | **Navigation** | Navigation 3 |
-| **State Management** | `StateFlow` + `ViewModel` (MVVM pattern) |
+| **Architecture** | Multi-module Clean Architecture (feature / domain / data layers), MVVM |
+| **State Management** | `StateFlow` + `ViewModel` |
 | **Data Storage** | Room (KMP) with bundled SQLite |
 | **Dependency Injection** | Koin |
 | **Logging** | Kermit |
@@ -35,10 +36,22 @@ https://github.com/user-attachments/assets/573745fb-1ff7-424b-8a81-63d43673763b
 ## 📁 Project Structure
 
 ```
-composeApp/   Shared KMP library — UI, ViewModels, Room database (nearly all code is in commonMain)
-androidApp/   Android application — MainActivity, Application class, manifest and launcher icons
-iosApp/       Xcode project — SwiftUI entry point that hosts the Compose UI
+androidApp/             Android application — MainActivity, Application class, manifest and launcher icons
+iosApp/                 Xcode project — SwiftUI entry point that hosts the Compose UI
+composeApp/             App shell shared by Android and iOS — navigation, Koin wiring, iOS framework
+feature/accounts/       Accounts list, add / edit account, account details (screens + ViewModels)
+feature/operations/     Operations list, add / edit operation
+feature/categories/     Categories list
+core/domain/            Models, repository interfaces and use cases (pure Kotlin)
+core/data/              Repository implementations, entity <-> model mappers
+core/database/          Room database, entities and DAOs
+core/ui/                Compose helpers shared by the features
+core/common/            Date and currency utilities
+build-logic/            Gradle convention plugins (stashguard.kmp.library / .compose / .feature)
 ```
+
+Dependencies point inwards: `feature:*` → `core:domain` ← `core:data` → `core:database`.
+Features never see Room or the data layer; `composeApp` wires everything together with Koin.
 
 ## 🚀 Getting Started
 

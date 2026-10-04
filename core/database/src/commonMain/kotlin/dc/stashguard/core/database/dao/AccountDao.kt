@@ -1,0 +1,59 @@
+package dc.stashguard.core.database.dao
+
+import androidx.room.*
+import dc.stashguard.core.database.entity.AccountEntity
+import kotlinx.coroutines.flow.Flow
+
+@Dao
+interface AccountDao {
+    // Query to get all accounts, returning a Flow for reactive updates
+    @Query("SELECT * FROM accounts ORDER BY position ASC, name COLLATE NOCASE ASC")
+    fun getAllAccounts(): Flow<List<AccountEntity>>
+
+    // Query to get all accounts synchronously
+    @Query("SELECT * FROM accounts ORDER BY position ASC, name COLLATE NOCASE ASC")
+    suspend fun getAllAccountsSuspend(): List<AccountEntity>
+
+    // Query to get a specific account by ID
+    @Query("SELECT * FROM accounts WHERE id = :id")
+    fun getAccountById(id: String): Flow<AccountEntity?>
+
+    @Query("SELECT * FROM accounts WHERE id = :id")
+    suspend fun getAccountByIdOnce(id: String): AccountEntity?
+
+    @Query("SELECT COALESCE(MAX(position), -1) FROM accounts")
+    suspend fun getMaxPosition(): Int
+
+    @Query("UPDATE accounts SET position = :position WHERE id = :id")
+    suspend fun updatePosition(id: String, position: Int)
+
+    // Persist a new order: each account's position becomes its index in `orderedIds`
+    @Transaction
+    suspend fun updatePositions(orderedIds: List<String>) {
+        orderedIds.forEachIndexed { index, id -> updatePosition(id, index) }
+    }
+
+    // Insert a single account
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAccount(account: AccountEntity)
+
+    // Insert multiple accounts
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAccounts(accounts: List<AccountEntity>)
+
+    // Update an existing account
+    @Update
+    suspend fun updateAccount(account: AccountEntity)
+
+    // Delete a specific account
+    @Delete
+    suspend fun deleteAccount(account: AccountEntity)
+
+    // Delete accounts by ID (alternative to @Delete)
+    @Query("DELETE FROM accounts WHERE id = :id")
+    suspend fun deleteAccountById(id: String)
+
+    // Delete all accounts
+    @Query("DELETE FROM accounts")
+    suspend fun deleteAllAccounts()
+}

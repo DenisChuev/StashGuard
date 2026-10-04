@@ -1,7 +1,7 @@
 package dc.stashguard.navigation
 
 import androidx.navigation3.runtime.NavKey
-import dc.stashguard.model.OperationType
+import dc.stashguard.core.domain.model.OperationType
 import kotlinx.serialization.Serializable
 
 // Tabs

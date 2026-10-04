@@ -11,14 +11,14 @@ import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import co.touchlab.kermit.Logger
-import dc.stashguard.screens.accounts.accounts_list.AccountsScreen
-import dc.stashguard.screens.accounts.add_account.AddAccountScreen
-import dc.stashguard.screens.accounts.details.DetailsAccountScreen
-import dc.stashguard.screens.accounts.edit_account.EditAccountScreen
-import dc.stashguard.screens.categories.CategoriesScreen
-import dc.stashguard.screens.operations.OperationsScreen
-import dc.stashguard.screens.operations.add_operation.AddOperationScreen
-import dc.stashguard.screens.operations.edit_operation.EditOperationScreen
+import dc.stashguard.feature.accounts.accounts_list.AccountsScreen
+import dc.stashguard.feature.accounts.add_account.AddAccountScreen
+import dc.stashguard.feature.accounts.details.DetailsAccountScreen
+import dc.stashguard.feature.accounts.edit_account.EditAccountScreen
+import dc.stashguard.feature.categories.CategoriesScreen
+import dc.stashguard.feature.operations.OperationsScreen
+import dc.stashguard.feature.operations.add_operation.AddOperationScreen
+import dc.stashguard.feature.operations.edit_operation.EditOperationScreen
 
 private val logger = Logger.withTag("AppNavigation")
 
