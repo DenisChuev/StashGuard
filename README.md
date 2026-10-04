@@ -31,7 +31,7 @@ https://github.com/user-attachments/assets/573745fb-1ff7-424b-8a81-63d43673763b
 | **Data Storage** | Room (KMP) with bundled SQLite |
 | **Dependency Injection** | Koin |
 | **Logging** | Kermit |
-| **Build** | Gradle 9.4, AGP 9.2, Kotlin 2.4 |
+| **Build** | Gradle 9.6, AGP 9.4, Kotlin 2.4 |
 
 ## 📁 Project Structure
 
