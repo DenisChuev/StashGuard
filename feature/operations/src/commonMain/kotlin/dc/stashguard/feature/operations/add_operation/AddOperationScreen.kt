@@ -108,6 +108,7 @@ fun AddOperationScreen(
             AddOperationContent(
                 state = state,
                 operationType = operationType,
+                currentAccountId = accountId,
                 availableAccounts = availableAccounts,
                 availableCategories = availableCategories,
                 onAmountChange = viewModel::updateAmount,
@@ -419,6 +420,7 @@ fun OperationTopAppBar(
 fun AddOperationContent(
     state: OperationState,
     operationType: OperationType,
+    currentAccountId: String,
     availableAccounts: List<Account>,
     availableCategories: List<Category>,
     onAmountChange: (String) -> Unit,
@@ -464,7 +466,7 @@ fun AddOperationContent(
                 title = if (isIncomingTransfer) "Transfer From" else "Transfer To",
                 toAccountId = state.toAccountId,
                 availableAccounts = availableAccounts,
-                currentAccountId = "", // You'll need to pass the current account ID
+                currentAccountId = currentAccountId,
                 onToAccountChange = onToAccountChange
             )
         }

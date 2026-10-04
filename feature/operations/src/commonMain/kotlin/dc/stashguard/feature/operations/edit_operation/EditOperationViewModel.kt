@@ -126,6 +126,11 @@ class EditOperationViewModel(
                 _state.update { it.copy(error = "Please select destination account") }
                 return
             }
+
+            originalOp.type == OperationType.TRANSFER && currentState.toAccountId == originalOp.accountId -> {
+                _state.update { it.copy(error = "Please select a different account") }
+                return
+            }
         }
 
         viewModelScope.launch {
@@ -156,6 +161,11 @@ class EditOperationViewModel(
 
     fun getOperationType(): OperationType? {
         return originalOperation.value?.type
+    }
+
+    /** The account this operation belongs to, or "" until it is loaded. */
+    fun getAccountId(): String {
+        return originalOperation.value?.accountId ?: ""
     }
 
     fun isIncomingTransfer(): Boolean {

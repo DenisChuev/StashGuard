@@ -64,6 +64,8 @@ class AddOperationUseCase(
         date: LocalDate,
         note: String,
     ) {
+        require(toAccountId != fromAccountId) { "Cannot transfer to the same account" }
+
         val transferId = Uuid.random().toString()
         val currentTime = DateUtils.currentInstant()
 

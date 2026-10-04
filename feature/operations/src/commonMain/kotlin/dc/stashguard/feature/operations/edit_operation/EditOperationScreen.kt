@@ -41,6 +41,7 @@ fun EditOperationScreen(
             AddOperationContent(
                 state = state,
                 operationType = operationType,
+                currentAccountId = viewModel.getAccountId(),
                 availableAccounts = availableAccounts,
                 availableCategories = availableCategories,
                 onAmountChange = viewModel::updateAmount,

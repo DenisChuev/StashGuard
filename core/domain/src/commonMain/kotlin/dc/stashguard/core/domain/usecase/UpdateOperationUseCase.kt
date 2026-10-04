@@ -56,6 +56,8 @@ class UpdateOperationUseCase(
         updatedOperation: Operation,
         otherAccountId: String,
     ) {
+        require(otherAccountId != original.accountId) { "Cannot transfer to the same account" }
+
         val linkedOp =
             original.linkedOperationId?.let { operationRepository.getLinkedOperations(it) }
                 ?.firstOrNull { it.id != original.id }

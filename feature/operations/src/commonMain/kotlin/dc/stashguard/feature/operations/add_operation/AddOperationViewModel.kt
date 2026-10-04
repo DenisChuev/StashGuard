@@ -114,6 +114,11 @@ class AddOperationViewModel(
                 _state.update { it.copy(error = "Please select destination account") }
                 return
             }
+
+            operationType == OperationType.TRANSFER && currentState.toAccountId == accountId -> {
+                _state.update { it.copy(error = "Please select a different account") }
+                return
+            }
         }
 
         viewModelScope.launch {
