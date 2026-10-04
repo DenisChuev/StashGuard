@@ -1,14 +1,8 @@
-import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
+// App shell shared by Android and iOS: navigation, DI wiring and the iOS framework.
+// Screens live in :feature:*, business logic in :core:domain, persistence in :core:data and :core:database.
 plugins {
-    alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidKotlinMultiplatformLibrary)
-    alias(libs.plugins.composeMultiplatform)
-    alias(libs.plugins.composeCompiler)
+    id("stashguard.kmp.compose")
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.room)
 }
 
 compose.resources {
@@ -20,16 +14,10 @@ compose.resources {
 kotlin {
     android {
         namespace = "dc.stashguard.shared"
-        compileSdk = libs.versions.android.compileSdk.get().toInt()
-        minSdk = libs.versions.android.minSdk.get().toInt()
 
         // Needed for Compose Multiplatform resources on Android.
         androidResources {
             enable = true
-        }
-
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_11)
         }
     }
 
@@ -53,42 +41,28 @@ kotlin {
 //        browser()
 //        binaries.executable()
 //    }
-    
+
     sourceSets {
         commonMain.dependencies {
-            implementation(libs.compose.runtime)
-            implementation(libs.compose.foundation)
-            implementation(libs.compose.material3)
-            implementation(libs.compose.ui)
+            implementation(projects.core.common)
+            implementation(projects.core.domain)
+            implementation(projects.core.database)
+            implementation(projects.core.data)
+            implementation(projects.feature.accounts)
+            implementation(projects.feature.operations)
+            implementation(projects.feature.categories)
+
             implementation(libs.compose.components.resources)
-            implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
-            implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.androidx.navigation3.ui)
             implementation(libs.androidx.lifecycle.viewmodelNavigation3)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.material.icons)
-            implementation(libs.room.runtime)
-            implementation(libs.sqlite.bundled)
             api(libs.koin.core)
-            implementation(libs.koin.compose)
-            implementation(libs.koin.compose.viewmodel)
             implementation(libs.kermit)
-            implementation(libs.kotlinx.datetime)
-            implementation(libs.reorderable)
         }
 //        commonTest.dependencies {
 //            implementation(libs.kotlin.test)
 //        }
     }
-}
-
-room {
-    schemaDirectory("$projectDir/schemas")
-}
-
-dependencies {
-    add("kspAndroid", libs.room.compiler)
-    add("kspIosSimulatorArm64", libs.room.compiler)
-    add("kspIosArm64", libs.room.compiler)
 }
