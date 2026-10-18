@@ -7,8 +7,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -18,11 +21,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PieChart
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -40,6 +46,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import co.touchlab.kermit.Logger
@@ -63,7 +70,8 @@ fun AccountsScreen(
     onNavigateToAddAccount: () -> Unit,
     viewModel: AccountsViewModel = koinViewModel()
 ) {
-    val accounts by viewModel.accounts.collectAsState()
+    val loadedAccounts by viewModel.accounts.collectAsState()
+    val accounts = loadedAccounts ?: emptyList()
 
     // Local copy that follows the drag. It must stay one State object for the screen's lifetime:
     // the drag handle's pointerInput keeps the onDragStopped lambda from when it started, so a
@@ -134,6 +142,14 @@ fun AccountsScreen(
             }
         }
 
+        // After the list, so it is drawn above it and gets the taps
+        if (loadedAccounts?.isEmpty() == true) {
+            AccountsEmptyState(
+                onAddAccount = onNavigateToAddAccount,
+                modifier = Modifier.align(Alignment.Center)
+            )
+        }
+
         FloatingActionButton(
             onClick = onNavigateToAddAccount,
             modifier = Modifier
@@ -144,6 +160,46 @@ fun AccountsScreen(
                 imageVector = Icons.Default.Add,
                 contentDescription = "Add account"
             )
+        }
+    }
+}
+
+@Composable
+private fun AccountsEmptyState(
+    onAddAccount: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier.padding(horizontal = 32.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Default.AccountBalanceWallet,
+            contentDescription = null,
+            modifier = Modifier.size(64.dp),
+            tint = MaterialTheme.colorScheme.outline
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "No accounts yet",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = "Add an account to start tracking your money",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.outline,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        FilledTonalButton(onClick = onAddAccount) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.size(8.dp))
+            Text("Add Account")
         }
     }
 }

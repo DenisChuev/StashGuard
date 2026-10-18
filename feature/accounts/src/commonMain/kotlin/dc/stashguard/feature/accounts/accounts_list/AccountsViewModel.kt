@@ -17,10 +17,11 @@ class AccountsViewModel(
     private val accountRepository: AccountRepository,
     private val deleteAccountUseCase: DeleteAccountUseCase,
 ) : ViewModel() {
-    val accounts: StateFlow<List<Account>> = accountRepository.observeAccounts().stateIn(
+    /** Null until the first database read, so the empty state doesn't flash while loading. */
+    val accounts: StateFlow<List<Account>?> = accountRepository.observeAccounts().stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList()
+        initialValue = null
     )
 
     fun updateAccount(account: Account) {
