@@ -103,9 +103,9 @@ private fun AnimatedNavIcon(item: BottomNavigationItem, selected: Boolean) {
             })
             NavIconMotion.Wiggle -> twist.animateTo(0f, keyframes {
                 durationMillis = 400
-                -12f at 80
+                12f at 80
                 12f at 200
-                -6f at 300
+                6f at 300
             })
             NavIconMotion.Spin -> {
                 twist.animateTo(360f, tween(durationMillis = 450, easing = FastOutSlowInEasing))
