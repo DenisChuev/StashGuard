@@ -71,6 +71,7 @@ To run on iOS, open `iosApp/iosApp.xcodeproj` in Xcode and run the `iosApp` sche
 - Currency per account with exchange rates
 - Reports and charts by category and period
 - Recurring operations
+- Design system (colors, typography, shared components) with light, dark and system themes
 - Biometric lock and database encryption
 - Release in Google Play, App Store, RuStore and Huawei AppGallery
 

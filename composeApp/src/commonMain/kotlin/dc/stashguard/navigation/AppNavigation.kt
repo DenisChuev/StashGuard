@@ -5,11 +5,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.entryProvider
@@ -43,21 +39,10 @@ fun AppNavigation(modifier: Modifier = Modifier) {
         modifier = modifier,
         bottomBar = {
             if (navigationState.isAtTabRoot) {
-                NavigationBar {
-                    BottomNavigationItem.entries.forEach { item ->
-                        NavigationBarItem(
-                            icon = {
-                                Icon(
-                                    imageVector = item.icon,
-                                    contentDescription = item.title
-                                )
-                            },
-                            label = { Text(item.title) },
-                            selected = navigationState.selectedTab == item.tab,
-                            onClick = { navigationState.navigate(item.tab) }
-                        )
-                    }
-                }
+                StashGuardNavigationBar(
+                    selectedTab = navigationState.selectedTab,
+                    onTabClick = navigationState::navigate
+                )
             }
         },
     ) { paddingValues ->
