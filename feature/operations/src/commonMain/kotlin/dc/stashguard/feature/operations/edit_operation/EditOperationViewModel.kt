@@ -2,6 +2,7 @@ package dc.stashguard.feature.operations.edit_operation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dc.stashguard.core.common.toBalanceString
 import dc.stashguard.core.domain.model.Account
 import dc.stashguard.core.domain.model.Category
 import dc.stashguard.core.domain.model.CategoryType
@@ -11,6 +12,7 @@ import dc.stashguard.core.domain.model.categoryType
 import dc.stashguard.core.domain.repository.AccountRepository
 import dc.stashguard.core.domain.repository.CategoryRepository
 import dc.stashguard.core.domain.repository.OperationRepository
+import dc.stashguard.core.domain.usecase.DeleteOperationUseCase
 import dc.stashguard.core.domain.usecase.LinkedOperationNotFoundException
 import dc.stashguard.core.domain.usecase.UpdateOperationUseCase
 import dc.stashguard.feature.operations.add_operation.OperationState
@@ -27,6 +29,7 @@ class EditOperationViewModel(
     categoryRepository: CategoryRepository,
     private val operationRepository: OperationRepository,
     private val updateOperationUseCase: UpdateOperationUseCase,
+    private val deleteOperationUseCase: DeleteOperationUseCase,
     private val operationId: String
 ) : ViewModel() {
 
@@ -34,6 +37,11 @@ class EditOperationViewModel(
     val state: StateFlow<OperationState> = _state.asStateFlow()
 
     private val originalOperation = MutableStateFlow<Operation?>(null)
+    val operation: StateFlow<Operation?> = originalOperation.asStateFlow()
+
+    // A transfer whose other side was deleted with its account can't be edited, only deleted
+    private val _isReadOnly = MutableStateFlow(false)
+    val isReadOnly: StateFlow<Boolean> = _isReadOnly.asStateFlow()
 
     val availableAccounts: Flow<List<Account>> = accountRepository.observeAccounts()
 
@@ -57,9 +65,11 @@ class EditOperationViewModel(
             try {
                 val operation = operationRepository.getOperation(operationId)
                 if (operation != null) {
+                    _isReadOnly.value = operation.isTransferWithoutOtherSide()
                     originalOperation.value = operation
                     _state.value = OperationState(
-                        amount = operation.amount.toString(),
+                        // Raw digits for the field, e.g. "200300" rather than "200300.0"
+                        amount = operation.amount.toBalanceString().filterNot { it == ' ' },
                         categoryId = operation.category,
                         toAccountId = operation.toAccountId ?: "",
                         date = operation.date,
@@ -155,20 +165,28 @@ class EditOperationViewModel(
         }
     }
 
+    fun deleteOperation(onSuccess: () -> Unit) {
+        val operation = originalOperation.value ?: return
+        if (_state.value.isLoading) return
+
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, error = null) }
+            try {
+                deleteOperationUseCase(operation)
+                onSuccess()
+            } catch (e: Exception) {
+                _state.update { it.copy(isLoading = false, error = "Error deleting operation: ${e.message}") }
+            }
+        }
+    }
+
+    private suspend fun Operation.isTransferWithoutOtherSide(): Boolean {
+        if (type != OperationType.TRANSFER) return false
+        val linkedId = linkedOperationId ?: return true
+        return operationRepository.getLinkedOperations(linkedId).none { it.id != id }
+    }
+
     fun clearError() {
         _state.update { it.copy(error = null) }
-    }
-
-    fun getOperationType(): OperationType? {
-        return originalOperation.value?.type
-    }
-
-    /** The account this operation belongs to, or "" until it is loaded. */
-    fun getAccountId(): String {
-        return originalOperation.value?.accountId ?: ""
-    }
-
-    fun isIncomingTransfer(): Boolean {
-        return originalOperation.value?.isIncoming == true
     }
 }

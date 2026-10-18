@@ -56,7 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dc.stashguard.core.common.formatForOperations
 import dc.stashguard.core.common.formatRelativeTime
-import dc.stashguard.core.common.toBalanceString
+import dc.stashguard.core.common.toCurrencyString
 import dc.stashguard.core.domain.model.Operation
 import dc.stashguard.core.domain.model.OperationType
 import org.koin.compose.viewmodel.koinViewModel
@@ -71,13 +71,14 @@ fun OperationsScreen(
     viewModel: OperationsViewModel = koinViewModel()
 ) {
     val operations by viewModel.operations.collectAsStateWithLifecycle()
+    val categoryNames by viewModel.categoryNames.collectAsStateWithLifecycle()
     var searchQuery by remember { mutableStateOf("") }
     var typeFilter by remember { mutableStateOf<OperationType?>(null) }
 
-    val filteredOperations = remember(operations, searchQuery, typeFilter) {
+    val filteredOperations = remember(operations, categoryNames, searchQuery, typeFilter) {
         operations.filter { operation ->
             val matchesSearch = searchQuery.isBlank() ||
-                    operation.category.contains(searchQuery, ignoreCase = true) ||
+                    operation.categoryName(categoryNames).contains(searchQuery, ignoreCase = true) ||
                     operation.note.contains(searchQuery, ignoreCase = true)
 
             val matchesType = typeFilter == null || operation.type == typeFilter
@@ -126,9 +127,13 @@ fun OperationsScreen(
             } else {
                 LazyColumn(modifier = Modifier.weight(1f)) {
                     items(filteredOperations) { operation ->
-                        OperationItem(operation = operation, onClick = {
-                            onEditOperation(operation.accountId, operation.id, operation.type)
-                        })
+                        OperationItem(
+                            operation = operation,
+                            categoryName = operation.categoryName(categoryNames),
+                            onClick = {
+                                onEditOperation(operation.accountId, operation.id, operation.type)
+                            }
+                        )
                     }
                 }
             }
@@ -169,6 +174,7 @@ fun OperationsEmptyState(
 @Composable
 fun OperationItem(
     operation: Operation,
+    categoryName: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -223,7 +229,7 @@ fun OperationItem(
             // Operation details
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = operation.category,
+                    text = categoryName,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium
                 )
@@ -256,9 +262,9 @@ fun OperationItem(
             // Amount with type-specific formatting
             Text(
                 text = when (operation.type) {
-                    OperationType.REVENUE -> "+${operation.amount.toBalanceString()}"
-                    OperationType.EXPENSE -> "-${operation.amount.toBalanceString()}"
-                    OperationType.TRANSFER -> "→ ${operation.amount.toBalanceString()}"
+                    OperationType.REVENUE -> "+${operation.amount.toCurrencyString()}"
+                    OperationType.EXPENSE -> "-${operation.amount.toCurrencyString()}"
+                    OperationType.TRANSFER -> "→ ${operation.amount.toCurrencyString()}"
                 },
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
@@ -331,7 +337,7 @@ private fun StatItem(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = value.toBalanceString(),
+                text = value.toCurrencyString(),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = color
@@ -431,3 +437,7 @@ fun OperationsFilterBar(
         }
     }
 }
+
+/** Name of the operation's category; falls back to the stored id if the category is gone. */
+private fun Operation.categoryName(categoryNames: Map<String, String>): String =
+    categoryNames[category] ?: category

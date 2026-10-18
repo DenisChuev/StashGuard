@@ -5,8 +5,10 @@ package dc.stashguard.core.domain.usecase
 import dc.stashguard.core.common.DateUtils
 import dc.stashguard.core.domain.model.Operation
 import dc.stashguard.core.domain.model.OperationType
+import dc.stashguard.core.domain.model.TRANSFER_CATEGORY_ID
 import dc.stashguard.core.domain.repository.AccountRepository
 import dc.stashguard.core.domain.repository.OperationRepository
+import dc.stashguard.core.domain.repository.TransactionRunner
 import kotlinx.datetime.LocalDate
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -18,6 +20,7 @@ import kotlin.uuid.Uuid
 class AddOperationUseCase(
     private val accountRepository: AccountRepository,
     private val operationRepository: OperationRepository,
+    private val transaction: TransactionRunner,
 ) {
     suspend operator fun invoke(
         accountId: String,
@@ -27,7 +30,7 @@ class AddOperationUseCase(
         date: LocalDate,
         note: String,
         toAccountId: String,
-    ) {
+    ) = transaction {
         when (type) {
             OperationType.REVENUE -> addSingleOperation(accountId, type, amount, categoryId, date, note)
             OperationType.EXPENSE -> addSingleOperation(accountId, type, amount, categoryId, date, note)
@@ -74,7 +77,7 @@ class AddOperationUseCase(
             accountId = fromAccountId,
             type = OperationType.TRANSFER,
             amount = amount,
-            category = TRANSFER_CATEGORY,
+            category = TRANSFER_CATEGORY_ID,
             date = date,
             note = note,
             createdAt = currentTime,
@@ -87,7 +90,7 @@ class AddOperationUseCase(
             accountId = toAccountId,
             type = OperationType.TRANSFER,
             amount = amount,
-            category = TRANSFER_CATEGORY,
+            category = TRANSFER_CATEGORY_ID,
             date = date,
             note = note,
             createdAt = currentTime,
@@ -99,9 +102,5 @@ class AddOperationUseCase(
         operationRepository.addOperations(listOf(expenseOperation, revenueOperation))
         accountRepository.adjustBalance(fromAccountId, -amount)
         accountRepository.adjustBalance(toAccountId, amount)
-    }
-
-    private companion object {
-        const val TRANSFER_CATEGORY = "Transfer"
     }
 }

@@ -41,6 +41,9 @@ interface OperationDao {
     @Query("DELETE FROM operations WHERE id = :operationId")
     suspend fun deleteOperationById(operationId: String)
 
+    @Query("DELETE FROM operations WHERE id IN (:operationIds)")
+    suspend fun deleteOperationsByIds(operationIds: List<String>)
+
     @Query("DELETE FROM operations WHERE account_id = :accountId")
     suspend fun deleteOperationsByAccount(accountId: String)
 
@@ -54,6 +57,10 @@ interface OperationDao {
     // For transfers - get both sides of a transfer
     @Query("SELECT * FROM operations WHERE linked_operation_id = :linkedOperationId")
     suspend fun getLinkedOperations(linkedOperationId: String): List<OperationEntity>
+
+    // Transfers in other accounts whose other side is in this account
+    @Query("SELECT * FROM operations WHERE type = 'TRANSFER' AND to_account_id = :accountId AND account_id != :accountId")
+    suspend fun getTransferCounterparts(accountId: String): List<OperationEntity>
 
     // If you need to get operations by date range for statistics
     @Query("SELECT * FROM operations WHERE account_id = :accountId AND date BETWEEN :startDate AND :endDate ORDER BY date DESC")

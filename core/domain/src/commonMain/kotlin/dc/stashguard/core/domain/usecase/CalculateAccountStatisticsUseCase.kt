@@ -6,7 +6,10 @@ import dc.stashguard.core.domain.model.Operation
 import dc.stashguard.core.domain.model.OperationType
 import kotlinx.datetime.LocalDate
 
-/** Revenue and expense totals over the last 30 days. */
+/**
+ * Revenue and expense totals over the last 30 days. Transfers are neither, but they count in
+ * the net change, so it matches how much the balance moved.
+ */
 class CalculateAccountStatisticsUseCase {
     operator fun invoke(
         operations: List<Operation>,
@@ -24,7 +27,12 @@ class CalculateAccountStatisticsUseCase {
             .filter { it.type == OperationType.EXPENSE }
             .sumOf { it.amount }
 
-        val netChange = totalRevenue - totalExpenses
+        val (transfersIn, transfersOut) = last30DaysOperations
+            .filter { it.type == OperationType.TRANSFER }
+            .partition { it.isIncoming }
+
+        val netChange = totalRevenue - totalExpenses +
+            transfersIn.sumOf { it.amount } - transfersOut.sumOf { it.amount }
 
         return AccountStatistics(
             totalRevenue = totalRevenue,

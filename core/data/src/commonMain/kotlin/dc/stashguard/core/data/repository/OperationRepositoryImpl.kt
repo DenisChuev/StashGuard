@@ -23,12 +23,19 @@ internal class OperationRepositoryImpl(
     override suspend fun getLinkedOperations(linkedOperationId: String): List<Operation> =
         operationDao.getLinkedOperations(linkedOperationId).map { it.toDomain() }
 
+    override suspend fun getTransferCounterparts(accountId: String): List<Operation> =
+        operationDao.getTransferCounterparts(accountId).map { it.toDomain() }
+
     override suspend fun addOperations(operations: List<Operation>) {
         operationDao.insertOperations(operations.map { it.toEntity() })
     }
 
     override suspend fun updateOperations(operations: List<Operation>) {
         operationDao.updateOperations(operations.map { it.toEntity() })
+    }
+
+    override suspend fun deleteOperations(ids: List<String>) {
+        operationDao.deleteOperationsByIds(ids)
     }
 
     override suspend fun deleteOperationsByAccount(accountId: String) {

@@ -6,6 +6,7 @@ import dc.stashguard.core.domain.usecase.AddAccountUseCase
 import dc.stashguard.core.domain.usecase.AddOperationUseCase
 import dc.stashguard.core.domain.usecase.CalculateAccountStatisticsUseCase
 import dc.stashguard.core.domain.usecase.DeleteAccountUseCase
+import dc.stashguard.core.domain.usecase.DeleteOperationUseCase
 import dc.stashguard.core.domain.usecase.InitializeDefaultCategoriesUseCase
 import dc.stashguard.core.domain.usecase.UpdateOperationUseCase
 import dc.stashguard.feature.accounts.di.accountsModule
@@ -23,6 +24,7 @@ val domainModule = module {
     factoryOf(::CalculateAccountStatisticsUseCase)
     factoryOf(::AddOperationUseCase)
     factoryOf(::UpdateOperationUseCase)
+    factoryOf(::DeleteOperationUseCase)
     factoryOf(::InitializeDefaultCategoriesUseCase)
 }
 

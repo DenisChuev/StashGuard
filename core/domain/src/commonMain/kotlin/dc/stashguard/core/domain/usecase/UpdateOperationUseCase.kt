@@ -4,6 +4,7 @@ import dc.stashguard.core.domain.model.Operation
 import dc.stashguard.core.domain.model.OperationType
 import dc.stashguard.core.domain.repository.AccountRepository
 import dc.stashguard.core.domain.repository.OperationRepository
+import dc.stashguard.core.domain.repository.TransactionRunner
 import kotlinx.datetime.LocalDate
 
 class LinkedOperationNotFoundException : Exception("Linked transfer operation not found")
@@ -15,6 +16,7 @@ class LinkedOperationNotFoundException : Exception("Linked transfer operation no
 class UpdateOperationUseCase(
     private val accountRepository: AccountRepository,
     private val operationRepository: OperationRepository,
+    private val transaction: TransactionRunner,
 ) {
     /**
      * @param toAccountId for a transfer, the other account: the destination when [original] is
@@ -28,7 +30,7 @@ class UpdateOperationUseCase(
         date: LocalDate,
         note: String,
         toAccountId: String,
-    ) {
+    ) = transaction {
         val updatedOperation = original.copy(
             amount = amount,
             category = categoryId,

@@ -43,12 +43,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import co.touchlab.kermit.Logger
+import dc.stashguard.core.common.toCurrencyString
 import dc.stashguard.core.domain.model.Account
 import dc.stashguard.core.ui.color
 import org.koin.compose.viewmodel.koinViewModel
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
-import kotlin.math.absoluteValue
 import kotlin.time.ExperimentalTime
 import kotlin.uuid.ExperimentalUuidApi
 
@@ -156,7 +156,7 @@ fun AccountCard(
     onEdit: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val formattedBalance = formatCurrency(account.balance)
+    val formattedBalance = account.balance.toCurrencyString()
     val textColor = Color.White
 //    val balanceColor = if (isDebt && balance < 0) Color.Red else textColor
     val balanceColor = textColor
@@ -210,14 +210,4 @@ fun AccountCard(
             }
         }
     }
-}
-
-private fun formatCurrency(amount: Double): String {
-    val sign = if (amount < 0) "-" else ""
-    val absAmount = amount.absoluteValue
-    return "$sign${absAmount.formatNumber()} ₽"
-}
-
-private fun Double.formatNumber(): String {
-    return this.toInt().toString().replace("\\B(?=(\\d{3})+(?!\\d))".toRegex(), " ")
 }

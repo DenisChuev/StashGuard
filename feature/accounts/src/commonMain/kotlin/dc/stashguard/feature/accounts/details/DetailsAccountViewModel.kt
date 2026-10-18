@@ -7,6 +7,7 @@ import dc.stashguard.core.domain.model.Account
 import dc.stashguard.core.domain.model.AccountStatistics
 import dc.stashguard.core.domain.model.Operation
 import dc.stashguard.core.domain.repository.AccountRepository
+import dc.stashguard.core.domain.repository.CategoryRepository
 import dc.stashguard.core.domain.repository.OperationRepository
 import dc.stashguard.core.domain.usecase.CalculateAccountStatisticsUseCase
 import dc.stashguard.core.domain.usecase.DeleteAccountUseCase
@@ -25,6 +26,7 @@ private val logger = Logger.withTag("DetailsAccountViewModel")
 class DetailsAccountViewModel(
     accountRepository: AccountRepository,
     operationRepository: OperationRepository,
+    categoryRepository: CategoryRepository,
     private val deleteAccountUseCase: DeleteAccountUseCase,
     private val calculateAccountStatistics: CalculateAccountStatisticsUseCase,
     private val accountId: String
@@ -55,6 +57,15 @@ class DetailsAccountViewModel(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
+        )
+
+    /** Category id -> name. Operations store the category id. */
+    val categoryNames: StateFlow<Map<String, String>> = categoryRepository.observeCategories()
+        .map { categories -> categories.associate { it.id to it.name } }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyMap()
         )
 
     // --- Statistics for this account ---

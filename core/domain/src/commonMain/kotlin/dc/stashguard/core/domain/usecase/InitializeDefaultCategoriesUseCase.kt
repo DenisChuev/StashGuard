@@ -2,6 +2,7 @@ package dc.stashguard.core.domain.usecase
 
 import dc.stashguard.core.domain.model.Category
 import dc.stashguard.core.domain.model.CategoryType
+import dc.stashguard.core.domain.model.TRANSFER_CATEGORY_ID
 import dc.stashguard.core.domain.repository.CategoryRepository
 import kotlinx.coroutines.flow.first
 
@@ -97,7 +98,7 @@ class InitializeDefaultCategoriesUseCase(private val categoryRepository: Categor
 
         // Both Categories (for transfers)
         Category(
-            id = "category_transfer",
+            id = TRANSFER_CATEGORY_ID,
             name = "Transfer",
             colorArgb = 0xFF9E9E9E.toInt(),
             iconName = "swap_horiz",

@@ -16,6 +16,7 @@ val accountsModule = module {
         DetailsAccountViewModel(
             accountRepository = get(),
             operationRepository = get(),
+            categoryRepository = get(),
             deleteAccountUseCase = get(),
             calculateAccountStatistics = get(),
             accountId = accountId

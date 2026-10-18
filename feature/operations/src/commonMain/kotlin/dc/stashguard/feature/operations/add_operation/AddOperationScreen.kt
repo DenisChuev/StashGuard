@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -73,10 +74,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dc.stashguard.core.common.CURRENCY_SYMBOL
+import dc.stashguard.core.common.toCurrencyString
 import dc.stashguard.core.domain.model.Account
 import dc.stashguard.core.domain.model.Category
 import dc.stashguard.core.domain.model.CategoryType
 import dc.stashguard.core.domain.model.OperationType
+import dc.stashguard.core.ui.BalanceVisualTransformation
 import dc.stashguard.core.ui.color
 import kotlinx.datetime.LocalDate
 import org.koin.compose.viewmodel.koinViewModel
@@ -373,23 +377,25 @@ fun getCategoryIcon(iconName: String): ImageVector {
 @Composable
 fun OperationTopAppBar(
     operationType: OperationType,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    isEditing: Boolean = false,
+    actions: @Composable RowScope.() -> Unit = {}
 ) {
     val (title, icon, color) = when (operationType) {
         OperationType.REVENUE -> Triple(
-            "Add Revenue",
+            if (isEditing) "Edit Revenue" else "Add Revenue",
             Icons.AutoMirrored.Filled.TrendingUp,
             Color(0xFF4CAF50)
         )
 
         OperationType.EXPENSE -> Triple(
-            "Add Expense",
+            if (isEditing) "Edit Expense" else "Add Expense",
             Icons.AutoMirrored.Filled.TrendingDown,
             Color(0xFFF44336)
         )
 
         OperationType.TRANSFER -> Triple(
-            "Transfer Money",
+            if (isEditing) "Edit Transfer" else "Transfer Money",
             Icons.Default.SwapHoriz,
             Color(0xFF2196F3)
         )
@@ -412,7 +418,8 @@ fun OperationTopAppBar(
             IconButton(onClick = onNavigateBack) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
             }
-        }
+        },
+        actions = actions
     )
 }
 
@@ -431,7 +438,8 @@ fun AddOperationContent(
     onSave: () -> Unit,
     modifier: Modifier = Modifier,
     // Editing the receiving side of a transfer: the picked account is the sender
-    isIncomingTransfer: Boolean = false
+    isIncomingTransfer: Boolean = false,
+    isEditing: Boolean = false
 ) {
     Column(
         modifier = modifier
@@ -499,6 +507,7 @@ fun AddOperationContent(
         SaveOperationButton(
             isLoading = state.isLoading,
             operationType = operationType,
+            isEditing = isEditing,
             onSave = onSave,
             modifier = Modifier.fillMaxWidth()
         )
@@ -534,8 +543,8 @@ fun AmountInputSection(
             OutlinedTextField(
                 value = amount,
                 onValueChange = { newValue ->
-                    // Allow only numbers and decimal point
-                    if (newValue.matches(Regex("^\\d*\\.?\\d*$"))) {
+                    // Allow only numbers and a decimal point with up to 2 decimals
+                    if (newValue.matches(Regex("^\\d*\\.?\\d{0,2}$"))) {
                         onAmountChange(newValue)
                     }
                 },
@@ -543,13 +552,14 @@ fun AmountInputSection(
                 placeholder = { Text("0.00") },
                 leadingIcon = {
                     Text(
-                        text = "₽",
+                        text = CURRENCY_SYMBOL,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(start = 8.dp)
                     )
                 },
+                visualTransformation = BalanceVisualTransformation(),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Decimal
                 ),
@@ -647,7 +657,7 @@ fun AccountSelectionItem(
                     style = MaterialTheme.typography.bodyLarge
                 )
                 Text(
-                    text = "$${account.balance}",
+                    text = account.balance.toCurrencyString(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -768,12 +778,14 @@ fun SaveOperationButton(
     isLoading: Boolean,
     operationType: OperationType,
     onSave: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isEditing: Boolean = false
 ) {
-    val buttonText = when (operationType) {
-        OperationType.REVENUE -> "Add Revenue"
-        OperationType.EXPENSE -> "Add Expense"
-        OperationType.TRANSFER -> "Complete Transfer"
+    val buttonText = when {
+        isEditing -> "Save Changes"
+        operationType == OperationType.REVENUE -> "Add Revenue"
+        operationType == OperationType.EXPENSE -> "Add Expense"
+        else -> "Complete Transfer"
     }
 
     val buttonColors = when (operationType) {
