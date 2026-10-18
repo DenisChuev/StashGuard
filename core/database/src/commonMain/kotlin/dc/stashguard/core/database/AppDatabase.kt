@@ -1,6 +1,5 @@
 package dc.stashguard.core.database
 
-import androidx.room.AutoMigration
 import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
@@ -20,12 +19,10 @@ import kotlinx.coroutines.IO
         AccountEntity::class,
         OperationEntity::class,
         CategoryEntity::class],
-    version = 5,
+    // Not published yet: schema changes bump the version and wipe the local database
+    // (destructive fallback below) instead of adding migrations
+    version = 1,
     exportSchema = true,
-    autoMigrations = [
-        AutoMigration(from = 3, to = 4), // accounts.position
-        AutoMigration(from = 4, to = 5, spec = TransferDirectionMigration::class), // operations.is_incoming
-    ]
 )
 @ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase : RoomDatabase() {
