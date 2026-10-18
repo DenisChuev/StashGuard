@@ -1,5 +1,9 @@
 package dc.stashguard.navigation
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -21,6 +25,11 @@ import dc.stashguard.feature.operations.add_operation.AddOperationScreen
 import dc.stashguard.feature.operations.edit_operation.EditOperationScreen
 
 private val logger = Logger.withTag("AppNavigation")
+
+private const val NAV_TRANSITION_MILLIS = 100
+
+private val navTransition =
+    fadeIn(tween(NAV_TRANSITION_MILLIS)) togetherWith fadeOut(tween(NAV_TRANSITION_MILLIS))
 
 @Composable
 fun AppNavigation(modifier: Modifier = Modifier) {
@@ -132,6 +141,10 @@ fun AppNavigation(modifier: Modifier = Modifier) {
         NavDisplay(
             entries = navigationState.rememberEntries(entryProvider),
             onBack = navigationState::goBack,
+            // Every navigation is a short crossfade instead of the platform's slide
+            transitionSpec = { navTransition },
+            popTransitionSpec = { navTransition },
+            predictivePopTransitionSpec = { navTransition },
             modifier = Modifier.padding(paddingValues)
         )
     }
