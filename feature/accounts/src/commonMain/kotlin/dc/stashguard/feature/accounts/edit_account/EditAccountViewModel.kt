@@ -88,12 +88,15 @@ class EditAccountViewModel(
     }
 
     // --- Editing actions ---
+    // Editing a field clears a validation error about it
     fun updateEditingName(newName: String) {
         _editingAccountName.value = newName
+        _error.value = null
     }
 
     fun updateEditingBalance(newBalance: String) {
         _editingAccountBalance.value = newBalance
+        _error.value = null
     }
 
     fun updateEditingColor(newColor: Color) {
@@ -125,6 +128,12 @@ class EditAccountViewModel(
         val balance = balanceString.toBalanceDouble()
         if (balance == null) {
             _error.value = "Balance must be a valid number."
+            return false
+        }
+
+        // Same limit as the balance field's error state
+        if (balance !in -1_000_000_000.0..1_000_000_000.0) {
+            _error.value = "Balance must be between -1B and 1B."
             return false
         }
 

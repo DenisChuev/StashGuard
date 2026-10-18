@@ -72,6 +72,13 @@ class NavigationState(
         }
     }
 
+    /** Pops the current tab's stack down to its root screen. */
+    fun goBackToRoot() {
+        while (currentStack.size > 1) {
+            currentStack.removeAt(currentStack.lastIndex)
+        }
+    }
+
     @Composable
     fun rememberEntries(entryProvider: (NavKey) -> NavEntry<NavKey>): List<NavEntry<NavKey>> {
         // Each stack is decorated separately so a hidden tab keeps its ViewModels and saved state.

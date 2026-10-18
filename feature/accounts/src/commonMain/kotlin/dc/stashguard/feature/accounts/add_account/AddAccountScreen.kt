@@ -28,6 +28,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -65,6 +66,8 @@ fun AddAccountScreen(
     var selectedColor by remember { mutableStateOf(Color(0xFF2196F3)) } // Default blue
     var isDebt by remember { mutableStateOf(false) }
     var showError by remember { mutableStateOf(false) }
+    val isSaving by viewModel.isSaving.collectAsState()
+    val saveError by viewModel.error.collectAsState()
 
     Scaffold(contentWindowInsets = WindowInsets(0, 0, 0, 0)) { paddingValues ->
         Column(
@@ -81,7 +84,10 @@ fun AddAccountScreen(
                 // Account Name Input
                 OutlinedTextField(
                     value = accountName,
-                    onValueChange = { accountName = it },
+                    onValueChange = {
+                        accountName = it
+                        viewModel.clearError()
+                    },
                     label = { Text("Account Name") },
                     placeholder = { Text("e.g., Savings, Credit Card") },
                     modifier = Modifier.fillMaxWidth()
@@ -90,7 +96,10 @@ fun AddAccountScreen(
                 // Balance Input
                 BalanceInput(
                     balance = accountBalance,
-                    onBalanceChange = { newBalance -> accountBalance = newBalance },
+                    onBalanceChange = { newBalance ->
+                        accountBalance = newBalance
+                        viewModel.clearError()
+                    },
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -116,7 +125,14 @@ fun AddAccountScreen(
                 // Error Message
                 if (showError) {
                     Text(
-                        text = "Please fill in account name and balance",
+                        text = "Please enter an account name and a valid balance",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                saveError?.let {
+                    Text(
+                        text = it,
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -127,10 +143,11 @@ fun AddAccountScreen(
             Button(
                 onClick = {
                     logger.d("Add account onclick")
-                    if (accountName.isNotBlank() && accountBalance.isNotBlank()) {
-                        val balanceValue = accountBalance.toDoubleOrNull() ?: 0.0
+                    // Same parsing and range check as the balance field's error state
+                    val balanceValue = accountBalance.toBalanceDouble()
+                    if (accountName.isNotBlank() && balanceValue != null && isValidBalanceFinal(accountBalance)) {
                         val newAccount = Account(
-                            name = accountName,
+                            name = accountName.trim(),
                             balance = balanceValue,
                             colorArgb = selectedColor.toArgb(),
                             isDebt = isDebt
@@ -148,6 +165,7 @@ fun AddAccountScreen(
                         showError = true
                     }
                 },
+                enabled = !isSaving,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Add Account")

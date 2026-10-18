@@ -47,6 +47,7 @@ import org.koin.core.parameter.parametersOf
 fun EditAccountScreen(
     accountId: String,
     onNavigateBack: () -> Unit,
+    onAccountDeleted: () -> Unit,
     viewModel: EditAccountViewModel = koinViewModel { parametersOf(accountId) }
 ) {
     // Collect all necessary state from the ViewModel
@@ -62,15 +63,6 @@ fun EditAccountScreen(
     if (isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
-        }
-        return
-    }
-
-    if (error != null) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = "Error: $error")
-            }
         }
         return
     }
@@ -105,9 +97,7 @@ fun EditAccountScreen(
 
                     IconButton(
                         onClick = {
-                            viewModel.deleteAccount(onSuccess = {
-                                onNavigateBack()
-                            })
+                            viewModel.deleteAccount(onSuccess = onAccountDeleted)
                         }
                     ) {
                         Icon(Icons.Default.Delete, contentDescription = "Delete")

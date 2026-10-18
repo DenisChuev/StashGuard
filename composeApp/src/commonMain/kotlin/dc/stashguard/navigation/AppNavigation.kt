@@ -71,7 +71,9 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             entry<EditAccount> { key ->
                 EditAccountScreen(
                     accountId = key.accountId,
-                    onNavigateBack = navigationState::goBack
+                    onNavigateBack = navigationState::goBack,
+                    // Screens below (e.g. the account's details) show a deleted account
+                    onAccountDeleted = navigationState::goBackToRoot
                 )
             }
 

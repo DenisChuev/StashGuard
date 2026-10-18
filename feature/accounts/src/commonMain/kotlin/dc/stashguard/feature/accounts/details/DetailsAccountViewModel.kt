@@ -74,8 +74,9 @@ class DetailsAccountViewModel(
     )
 
     // --- Loading and error states ---
+    // Loading ends with the first emission; a null account then means "not found", not "loading"
     val isLoading: StateFlow<Boolean> = _accountFlow
-        .map { it == null }
+        .map { false }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
