@@ -33,6 +33,7 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -51,6 +52,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -68,9 +70,11 @@ import kotlin.time.Instant
 fun OperationsScreen(
     onEditOperation: (accountId: String, operationId: String, operationType: OperationType) -> Unit,
     onNavigateBack: () -> Unit,
+    onNavigateToAccounts: () -> Unit,
     viewModel: OperationsViewModel = koinViewModel()
 ) {
-    val operations by viewModel.operations.collectAsStateWithLifecycle()
+    val loadedOperations by viewModel.operations.collectAsStateWithLifecycle()
+    val operations = loadedOperations ?: emptyList()
     val categoryNames by viewModel.categoryNames.collectAsStateWithLifecycle()
     var searchQuery by remember { mutableStateOf("") }
     var typeFilter by remember { mutableStateOf<OperationType?>(null) }
@@ -109,32 +113,68 @@ fun OperationsScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Header with type-based stats
-            OperationsHeader(operations = operations)
+            when {
+                // Still loading: show nothing rather than a flash of the empty state
+                loadedOperations == null -> Unit
 
-            // Enhanced filter with type filtering
-            OperationsFilterBar(
-                onSearchChanged = { searchQuery = it },
-                onFilterChanged = { typeFilter = it }
-            )
-
-            // Operations list
-            if (filteredOperations.isEmpty()) {
-                OperationsEmptyState(
+                // Nothing recorded yet: no totals or search, just the empty state
+                operations.isEmpty() -> OperationsEmptyState(
                     modifier = Modifier.weight(1f),
-                    hasOperations = operations.isNotEmpty()
+                    hasOperations = false,
+                    onGoToAccounts = onNavigateToAccounts
                 )
-            } else {
-                LazyColumn(modifier = Modifier.weight(1f)) {
-                    items(filteredOperations) { operation ->
-                        OperationItem(
-                            operation = operation,
-                            categoryName = operation.categoryName(categoryNames),
-                            onClick = {
-                                onEditOperation(operation.accountId, operation.id, operation.type)
-                            }
-                        )
-                    }
+
+                else -> OperationsContent(
+                    operations = operations,
+                    filteredOperations = filteredOperations,
+                    categoryNames = categoryNames,
+                    onSearchChanged = { searchQuery = it },
+                    onFilterChanged = { typeFilter = it },
+                    onEditOperation = onEditOperation,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+/** Totals, search and the list, once there is at least one operation. */
+@Composable
+private fun OperationsContent(
+    operations: List<Operation>,
+    filteredOperations: List<Operation>,
+    categoryNames: Map<String, String>,
+    onSearchChanged: (String) -> Unit,
+    onFilterChanged: (OperationType?) -> Unit,
+    onEditOperation: (accountId: String, operationId: String, operationType: OperationType) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        // Header with type-based stats
+        OperationsHeader(operations = operations)
+
+        // Enhanced filter with type filtering
+        OperationsFilterBar(
+            onSearchChanged = onSearchChanged,
+            onFilterChanged = onFilterChanged
+        )
+
+        // Operations list
+        if (filteredOperations.isEmpty()) {
+            OperationsEmptyState(
+                modifier = Modifier.weight(1f),
+                hasOperations = true
+            )
+        } else {
+            LazyColumn(modifier = Modifier.weight(1f)) {
+                items(filteredOperations) { operation ->
+                    OperationItem(
+                        operation = operation,
+                        categoryName = operation.categoryName(categoryNames),
+                        onClick = {
+                            onEditOperation(operation.accountId, operation.id, operation.type)
+                        }
+                    )
                 }
             }
         }
@@ -144,10 +184,13 @@ fun OperationsScreen(
 @Composable
 fun OperationsEmptyState(
     modifier: Modifier = Modifier,
-    hasOperations: Boolean = false
+    hasOperations: Boolean = false,
+    onGoToAccounts: (() -> Unit)? = null
 ) {
     Column(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -164,10 +207,21 @@ fun OperationsEmptyState(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
-            text = if (hasOperations) "Try changing your filters" else "Your transactions will appear here",
+            text = if (hasOperations) {
+                "Try changing your filters"
+            } else {
+                "Open an account to add a revenue, expense or transfer"
+            },
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.outline
+            color = MaterialTheme.colorScheme.outline,
+            textAlign = TextAlign.Center
         )
+        if (onGoToAccounts != null) {
+            Spacer(modifier = Modifier.height(24.dp))
+            FilledTonalButton(onClick = onGoToAccounts) {
+                Text("Go to Accounts")
+            }
+        }
     }
 }
 

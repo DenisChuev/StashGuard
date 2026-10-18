@@ -15,12 +15,13 @@ class OperationsViewModel(
     operationRepository: OperationRepository,
     categoryRepository: CategoryRepository,
 ) : ViewModel() {
-    val operations: StateFlow<List<Operation>> = operationRepository.observeOperations()
+    /** Null until the first database read, so the empty state doesn't flash while loading. */
+    val operations: StateFlow<List<Operation>?> = operationRepository.observeOperations()
         .map { operations -> operations.withoutReceivingTransferSides().sortedByDescending { it.createdAt } }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
+            initialValue = null
         )
 
     /** Category id -> name. Operations store the category id. */
