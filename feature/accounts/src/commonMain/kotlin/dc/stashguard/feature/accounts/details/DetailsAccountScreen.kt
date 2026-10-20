@@ -2,14 +2,17 @@
 
 package dc.stashguard.feature.accounts.details
 
+import androidx.compose.animation.core.animate
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.CallMade
@@ -21,14 +24,24 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Velocity
+import androidx.compose.ui.unit.lerp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dc.stashguard.core.common.formatForOperations
 import dc.stashguard.core.common.toCurrencyString
@@ -50,6 +63,12 @@ private const val LOAD_MORE_THRESHOLD = 5
 
 /** Width to height of a bank card (ISO/IEC 7810 ID-1, 85.60 x 53.98 mm). */
 private const val BANK_CARD_ASPECT_RATIO = 85.60f / 53.98f
+
+/** Space around the expanded account card; it shrinks to nothing as the card collapses. */
+private val CARD_MARGIN = 16.dp
+
+/** Height of the collapsed account card: a toolbar. */
+private val COLLAPSED_HEADER_HEIGHT = 64.dp
 
 @Composable
 fun DetailsAccountScreen(
@@ -197,26 +216,109 @@ fun AccountDetailsContent(
             .collect { currentOnLoadMoreOperations() }
     }
 
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val density = LocalDensity.current
+        // A full-width bank card, plus its top margin
+        val expandedHeaderHeight = CARD_MARGIN + (maxWidth - CARD_MARGIN * 2) / BANK_CARD_ASPECT_RATIO
+        val collapseRangePx = with(density) { (expandedHeaderHeight - COLLAPSED_HEADER_HEIGHT).toPx() }
+            .coerceAtLeast(0f)
+
+        // How far the header has collapsed, in px, from 0 (card) to collapseRangePx (toolbar)
+        var collapseOffsetPx by remember { mutableFloatStateOf(0f) }
+        val collapseOffset = collapseOffsetPx.coerceIn(0f, collapseRangePx)
+        val collapseFraction = if (collapseRangePx > 0f) collapseOffset / collapseRangePx else 0f
+
+        // Scrolling up collapses the header before the list moves; scrolling down expands it
+        // only once the list is back at its top
+        val headerScrollConnection = remember(collapseRangePx) {
+            object : NestedScrollConnection {
+                override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                    if (available.y >= 0f) return Offset.Zero
+                    val previous = collapseOffsetPx.coerceIn(0f, collapseRangePx)
+                    collapseOffsetPx = (previous - available.y).coerceAtMost(collapseRangePx)
+                    return Offset(0f, previous - collapseOffsetPx)
+                }
+
+                override fun onPostScroll(
+                    consumed: Offset,
+                    available: Offset,
+                    source: NestedScrollSource
+                ): Offset {
+                    if (available.y <= 0f) return Offset.Zero
+                    val previous = collapseOffsetPx.coerceIn(0f, collapseRangePx)
+                    collapseOffsetPx = (previous - available.y).coerceAtLeast(0f)
+                    return Offset(0f, previous - collapseOffsetPx)
+                }
+
+                // Never rest half-collapsed, where neither the card's content nor the toolbar's shows:
+                // settle on the closer end once a scroll or fling is over
+                override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+                    val current = collapseOffsetPx.coerceIn(0f, collapseRangePx)
+                    if (current > 0f && current < collapseRangePx) {
+                        val target = if (current > collapseRangePx / 2) collapseRangePx else 0f
+                        animate(initialValue = current, targetValue = target) { value, _ ->
+                            collapseOffsetPx = value
+                        }
+                    }
+                    return Velocity.Zero
+                }
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .nestedScroll(headerScrollConnection)
+        ) {
+            AccountHeader(
+                account = account,
+                collapseFraction = collapseFraction,
+                onNavigateBack = onNavigateBack,
+                onEditAccount = onEditAccount,
+                modifier = Modifier.height(with(density) { expandedHeaderHeight - collapseOffset.toDp() })
+            )
+
+            AccountDetailsList(
+                listState = listState,
+                operationsByDay = operationsByDay,
+                isEmpty = recentOperations.isEmpty(),
+                dailyTotals = dailyTotals,
+                categoryNames = categoryNames,
+                canLoadMoreOperations = canLoadMoreOperations,
+                onAddRevenue = onAddRevenue,
+                onAddExpense = onAddExpense,
+                onTransfer = onTransfer,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun AccountDetailsList(
+    listState: LazyListState,
+    operationsByDay: Map<LocalDate, List<Operation>>,
+    isEmpty: Boolean,
+    dailyTotals: Map<LocalDate, Double>,
+    categoryNames: Map<String, String>,
+    canLoadMoreOperations: Boolean,
+    onAddRevenue: () -> Unit,
+    onAddExpense: () -> Unit,
+    onTransfer: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     LazyColumn(
         state = listState,
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Account Summary Card (also the screen's toolbar)
-        item(key = "summary") {
-            AccountSummaryCard(
-                account = account,
-                onNavigateBack = onNavigateBack,
-                onEditAccount = onEditAccount
-            )
-        }
-
         item(key = "quick_actions") {
             QuickActionsRow(
                 onAddRevenue = onAddRevenue,
                 onAddExpense = onAddExpense,
-                onTransfer = onTransfer
+                onTransfer = onTransfer,
+                modifier = Modifier.padding(horizontal = 8.dp)
             )
         }
 
@@ -229,7 +331,7 @@ fun AccountDetailsContent(
             )
         }
 
-        if (recentOperations.isEmpty()) {
+        if (isEmpty) {
             item(key = "history_empty") {
                 Text(
                     text = "No operations yet",
@@ -273,30 +375,38 @@ fun AccountDetailsContent(
     }
 }
 
+/**
+ * The account as a full-width bank card that collapses into a toolbar, with the name as the
+ * title and the balance as the subtitle. The caller sets the height as it collapses.
+ */
 @Composable
-fun AccountSummaryCard(
+private fun AccountHeader(
     account: Account,
+    collapseFraction: Float,
     onNavigateBack: () -> Unit,
     onEditAccount: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    val margin = lerp(CARD_MARGIN, 0.dp, collapseFraction)
+    // The card's content fades out over the first half of the collapse, the toolbar's in over the second
+    val cardContentAlpha = (1f - collapseFraction * 2f).coerceIn(0f, 1f)
+    val toolbarContentAlpha = (collapseFraction * 2f - 1f).coerceIn(0f, 1f)
+
+    Surface(
         modifier = modifier
             .fillMaxWidth()
-            .aspectRatio(BANK_CARD_ASPECT_RATIO),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+            .padding(start = margin, top = margin, end = margin),
+        shape = RoundedCornerShape(lerp(12.dp, 0.dp, collapseFraction)),
         // Solid account color with white content, like the account's card in the accounts list
-        colors = CardDefaults.cardColors(
-            containerColor = account.color,
-            contentColor = Color.White
-        )
+        color = account.color,
+        contentColor = Color.White,
+        shadowElevation = 4.dp
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(8.dp)
         ) {
-            // Back, centered name and edit, in place of a toolbar
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
@@ -304,17 +414,44 @@ fun AccountSummaryCard(
                 IconButton(onClick = onNavigateBack) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                 }
-                Text(
-                    text = account.name,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.weight(1f)
-                )
+                Box(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = account.name,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.Center)
+                            .alpha(cardContentAlpha)
+                    )
+                    // Toolbar title and subtitle
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.CenterStart)
+                            .padding(start = 12.dp)
+                            .alpha(toolbarContentAlpha)
+                    ) {
+                        Text(
+                            text = account.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = account.balance.toCurrencyString(),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = LocalContentColor.current.copy(alpha = 0.8f),
+                            maxLines = 1
+                        )
+                    }
+                }
                 IconButton(onClick = onEditAccount) {
-                    Icon(Icons.Default.Edit, "Edit Account")
+                    // The pencil fills more of its 24dp box than the back arrow; 20dp evens them out
+                    Icon(Icons.Default.Edit, "Edit Account", modifier = Modifier.size(20.dp))
                 }
             }
 
@@ -324,12 +461,18 @@ fun AccountSummaryCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
+                    // The balance would spill over the top row as the card gets shorter
+                    .clipToBounds()
+                    .alpha(cardContentAlpha)
                     .padding(horizontal = 16.dp)
             ) {
+                // Shrinks a long balance to stay on one line
                 Text(
                     text = account.balance.toCurrencyString(),
                     style = MaterialTheme.typography.displaySmall,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    autoSize = TextAutoSize.StepBased(minFontSize = 16.sp, maxFontSize = 36.sp)
                 )
 
                 if (account.isDebt) {
@@ -340,9 +483,6 @@ fun AccountSummaryCard(
                     )
                 }
             }
-
-            // Mirrors the 48dp top row, so the balance sits at the card's center
-            Spacer(modifier = Modifier.height(48.dp))
         }
     }
 }
@@ -355,7 +495,7 @@ private fun QuickActionsRow(
     modifier: Modifier = Modifier
 ) {
     Row(
-        horizontalArrangement = Arrangement.SpaceEvenly,
+        horizontalArrangement = Arrangement.SpaceBetween,
         modifier = modifier.fillMaxWidth()
     ) {
         QuickActionButton(
@@ -591,7 +731,8 @@ private fun HistoryDayHeader(
             text = date.formatForOperations(),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.primary,
+            // A softer black than the operation names below it
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(1f)
         )
         Text(
