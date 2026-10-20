@@ -119,12 +119,8 @@ class EditAccountViewModel(
             return
         }
 
-        if (balanceString.isBlank()) {
-            _error.value = "Balance is required."
-            return
-        }
-
-        val balance = balanceString.toBalanceDouble()
+        // An empty balance means 0, as on the Add Account screen
+        val balance = balanceString.ifBlank { "0" }.toBalanceDouble()
         if (balance == null) {
             _error.value = "Balance must be a valid number."
             return

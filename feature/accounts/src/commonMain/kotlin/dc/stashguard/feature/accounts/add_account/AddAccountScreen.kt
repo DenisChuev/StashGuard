@@ -21,6 +21,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.AccountBalanceWallet
+import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -41,9 +43,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import co.touchlab.kermit.Logger
+import dc.stashguard.core.common.CURRENCY_SYMBOL
 import dc.stashguard.core.common.toBalanceDouble
 import dc.stashguard.core.domain.model.Account
 import dc.stashguard.core.ui.BalanceVisualTransformation
@@ -114,15 +119,12 @@ fun AddAccountScreen(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Account Name Input
-                OutlinedTextField(
-                    value = accountName,
-                    onValueChange = {
+                AccountNameInput(
+                    name = accountName,
+                    onNameChange = {
                         accountName = it
                         viewModel.clearError()
                     },
-                    label = { Text("Account Name") },
-                    placeholder = { Text("e.g., Savings, Credit Card") },
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -146,7 +148,7 @@ fun AddAccountScreen(
                 // Error Message
                 if (showError) {
                     Text(
-                        text = "Please enter an account name and a valid balance",
+                        text = "Please enter an account name",
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -164,8 +166,8 @@ fun AddAccountScreen(
             Button(
                 onClick = {
                     logger.d("Add account onclick")
-                    // Same parsing and range check as the balance field's error state
-                    val balanceValue = accountBalance.toBalanceDouble()
+                    // Same parsing and range check as the balance field's error state; empty means 0
+                    val balanceValue = accountBalance.ifBlank { "0" }.toBalanceDouble()
                     if (accountName.isNotBlank() && balanceValue != null && isValidBalanceFinal(accountBalance)) {
                         val newAccount = Account(
                             name = accountName.trim(),
@@ -199,6 +201,28 @@ fun AddAccountScreen(
 }
 
 @Composable
+fun AccountNameInput(
+    name: String,
+    onNameChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    OutlinedTextField(
+        value = name,
+        onValueChange = onNameChange,
+        label = { Text("Account name") },
+        placeholder = { Text("e.g. Savings, Credit Card") },
+        leadingIcon = { Icon(Icons.Outlined.AccountBalanceWallet, contentDescription = null) },
+        keyboardOptions = KeyboardOptions(
+            capitalization = KeyboardCapitalization.Sentences,
+            imeAction = ImeAction.Next
+        ),
+        singleLine = true,
+        shape = MaterialTheme.shapes.medium,
+        modifier = modifier.fillMaxWidth()
+    )
+}
+
+@Composable
 fun BalanceInput(
     balance: String,
     onBalanceChange: (String) -> Unit,
@@ -213,12 +237,16 @@ fun BalanceInput(
         },
         visualTransformation = BalanceVisualTransformation(),
         label = { Text("Balance") },
-        placeholder = { Text("0.00") },
+        placeholder = { Text("0") },
+        leadingIcon = { Icon(Icons.Outlined.Payments, contentDescription = null) },
+        suffix = { Text(CURRENCY_SYMBOL) },
         keyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.Decimal,
-            autoCorrectEnabled = false
+            autoCorrectEnabled = false,
+            imeAction = ImeAction.Done
         ),
         singleLine = true,
+        shape = MaterialTheme.shapes.medium,
         isError = !isValidBalanceFinal(balance) && balance.isNotEmpty(),
         supportingText = {
             if (!isValidBalanceFinal(balance) && balance.isNotEmpty()) {
