@@ -18,7 +18,6 @@ val accountsModule = module {
             operationRepository = get(),
             categoryRepository = get(),
             deleteAccountUseCase = get(),
-            calculateAccountStatistics = get(),
             accountId = accountId
         )
     }

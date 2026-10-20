@@ -7,6 +7,7 @@ import dc.stashguard.core.domain.model.Operation
 import dc.stashguard.core.domain.repository.OperationRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.LocalDate
 
 internal class OperationRepositoryImpl(
     private val operationDao: OperationDao,
@@ -14,8 +15,13 @@ internal class OperationRepositoryImpl(
     override fun observeOperations(): Flow<List<Operation>> =
         operationDao.getAllOperations().map { entities -> entities.map { it.toDomain() } }
 
-    override fun observeOperationsByAccount(accountId: String): Flow<List<Operation>> =
-        operationDao.getOperationsByAccount(accountId).map { entities -> entities.map { it.toDomain() } }
+    override fun observeOperationsByAccount(accountId: String, limit: Int): Flow<List<Operation>> =
+        operationDao.getOperationsByAccount(accountId, limit).map { entities -> entities.map { it.toDomain() } }
+
+    override fun observeDailyTotalsByAccount(accountId: String): Flow<Map<LocalDate, Double>> =
+        operationDao.getDailyTotalsByAccount(accountId).map { totals ->
+            totals.associate { LocalDate.parse(it.date) to it.total }
+        }
 
     override suspend fun getOperation(id: String): Operation? =
         operationDao.getOperationById(id)?.toDomain()

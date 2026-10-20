@@ -4,7 +4,6 @@ import dc.stashguard.core.data.di.dataModule
 import dc.stashguard.core.database.di.databaseModule
 import dc.stashguard.core.domain.usecase.AddAccountUseCase
 import dc.stashguard.core.domain.usecase.AddOperationUseCase
-import dc.stashguard.core.domain.usecase.CalculateAccountStatisticsUseCase
 import dc.stashguard.core.domain.usecase.DeleteAccountUseCase
 import dc.stashguard.core.domain.usecase.DeleteOperationUseCase
 import dc.stashguard.core.domain.usecase.InitializeDefaultCategoriesUseCase
@@ -21,7 +20,6 @@ import org.koin.dsl.module
 val domainModule = module {
     factoryOf(::AddAccountUseCase)
     factoryOf(::DeleteAccountUseCase)
-    factoryOf(::CalculateAccountStatisticsUseCase)
     factoryOf(::AddOperationUseCase)
     factoryOf(::UpdateOperationUseCase)
     factoryOf(::DeleteOperationUseCase)

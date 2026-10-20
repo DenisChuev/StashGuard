@@ -7,10 +7,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.CallMade
@@ -31,17 +30,26 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dc.stashguard.core.common.formatForOperations
 import dc.stashguard.core.common.toCurrencyString
 import dc.stashguard.core.domain.model.Account
-import dc.stashguard.core.domain.model.AccountStatistics
 import dc.stashguard.core.domain.model.Operation
 import dc.stashguard.core.domain.model.OperationType
 import dc.stashguard.core.ui.color
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import kotlin.time.ExperimentalTime
+
+/** How many items from the end of the list the next batch of operations starts loading. */
+private const val LOAD_MORE_THRESHOLD = 5
+
+/** Width to height of a bank card (ISO/IEC 7810 ID-1, 85.60 x 53.98 mm). */
+private const val BANK_CARD_ASPECT_RATIO = 85.60f / 53.98f
 
 @Composable
 fun DetailsAccountScreen(
@@ -56,8 +64,9 @@ fun DetailsAccountScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val recentOperations by viewModel.recentOperations.collectAsStateWithLifecycle()
+    val dailyTotals by viewModel.dailyTotals.collectAsStateWithLifecycle()
     val categoryNames by viewModel.categoryNames.collectAsStateWithLifecycle()
-    val statistics by viewModel.accountStatistics.collectAsStateWithLifecycle()
+    val canLoadMoreOperations by viewModel.canLoadMoreOperations.collectAsStateWithLifecycle()
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -84,8 +93,10 @@ fun DetailsAccountScreen(
             account != null -> AccountDetailsContent(
                 account = account!!,
                 recentOperations = recentOperations,
+                dailyTotals = dailyTotals,
                 categoryNames = categoryNames,
-                statistics = statistics,
+                canLoadMoreOperations = canLoadMoreOperations,
+                onLoadMoreOperations = viewModel::loadMoreOperations,
                 onNavigateBack = onNavigateBack,
                 onEditAccount = { onNavigateToEditAccount(accountId) },
                 onAddRevenue = { onNavigateAddOperation(accountId, OperationType.REVENUE) },
@@ -159,8 +170,10 @@ fun DetailsTopAppBar(
 fun AccountDetailsContent(
     account: Account,
     recentOperations: List<Operation>,
+    dailyTotals: Map<LocalDate, Double>,
     categoryNames: Map<String, String>,
-    statistics: AccountStatistics,
+    canLoadMoreOperations: Boolean,
+    onLoadMoreOperations: () -> Unit,
     onNavigateBack: () -> Unit,
     onEditAccount: () -> Unit,
     onAddRevenue: () -> Unit,
@@ -168,32 +181,95 @@ fun AccountDetailsContent(
     onTransfer: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+    val operationsByDay = remember(recentOperations) { recentOperations.groupBy { it.date } }
+    val listState = rememberLazyListState()
+    val currentOnLoadMoreOperations by rememberUpdatedState(onLoadMoreOperations)
+
+    // Load the next batch once the end of the list scrolls close into view
+    LaunchedEffect(listState) {
+        snapshotFlow {
+            val layoutInfo = listState.layoutInfo
+            val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            lastVisibleIndex >= layoutInfo.totalItemsCount - LOAD_MORE_THRESHOLD
+        }
+            .distinctUntilChanged()
+            .filter { it }
+            .collect { currentOnLoadMoreOperations() }
+    }
+
+    LazyColumn(
+        state = listState,
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         // Account Summary Card (also the screen's toolbar)
-        AccountSummaryCard(
-            account = account,
-            onNavigateBack = onNavigateBack,
-            onEditAccount = onEditAccount,
-            onAddRevenue = onAddRevenue,
-            onAddExpense = onAddExpense,
-            onTransfer = onTransfer
-        )
+        item(key = "summary") {
+            AccountSummaryCard(
+                account = account,
+                onNavigateBack = onNavigateBack,
+                onEditAccount = onEditAccount
+            )
+        }
 
-        // Statistics Card
-        StatisticsCard(statistics = statistics)
+        item(key = "quick_actions") {
+            QuickActionsRow(
+                onAddRevenue = onAddRevenue,
+                onAddExpense = onAddExpense,
+                onTransfer = onTransfer
+            )
+        }
 
-        // Recent Activity Section
-        RecentActivitySection(
-            operations = recentOperations,
-            categoryNames = categoryNames,
-            isEmpty = recentOperations.isEmpty()
-        )
+        item(key = "history_header") {
+            Text(
+                text = "History",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+
+        if (recentOperations.isEmpty()) {
+            item(key = "history_empty") {
+                Text(
+                    text = "No operations yet",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        } else {
+            // Operations come newest first, so grouping keeps the days in order
+            operationsByDay.forEach { (date, operations) ->
+                item(key = "day_$date") {
+                    HistoryDayHeader(
+                        date = date,
+                        // Falls back to the loaded operations until the totals query emits
+                        total = dailyTotals[date] ?: operations.sumOf { it.signedAmount }
+                    )
+                }
+                items(operations, key = { it.id }) { operation ->
+                    OperationListItem(
+                        operation = operation,
+                        // Falls back to the stored id if the category is gone
+                        categoryName = categoryNames[operation.category] ?: operation.category
+                    )
+                }
+            }
+        }
+
+        if (canLoadMoreOperations) {
+            item(key = "loading_more") {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                }
+            }
+        }
     }
 }
 
@@ -202,13 +278,12 @@ fun AccountSummaryCard(
     account: Account,
     onNavigateBack: () -> Unit,
     onEditAccount: () -> Unit,
-    onAddRevenue: () -> Unit,
-    onAddExpense: () -> Unit,
-    onTransfer: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .aspectRatio(BANK_CARD_ASPECT_RATIO),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         // Solid account color with white content, like the account's card in the accounts list
         colors = CardDefaults.cardColors(
@@ -217,9 +292,11 @@ fun AccountSummaryCard(
         )
     ) {
         Column(
-            modifier = Modifier.padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = 16.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(8.dp)
         ) {
-            // Back, name and edit, in place of a toolbar
+            // Back, centered name and edit, in place of a toolbar
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
@@ -233,6 +310,7 @@ fun AccountSummaryCard(
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
                     modifier = Modifier.weight(1f)
                 )
                 IconButton(onClick = onEditAccount) {
@@ -240,8 +318,14 @@ fun AccountSummaryCard(
                 }
             }
 
-            // Balance, aligned with the name (past the 48dp back button)
-            Column(modifier = Modifier.padding(start = 48.dp, end = 16.dp)) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(horizontal = 16.dp)
+            ) {
                 Text(
                     text = account.balance.toCurrencyString(),
                     style = MaterialTheme.typography.displaySmall,
@@ -257,33 +341,41 @@ fun AccountSummaryCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Quick actions
-            Row(
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                QuickActionButton(
-                    icon = Icons.AutoMirrored.Filled.TrendingUp,
-                    label = "Revenue",
-                    color = Color(0xFF4CAF50),
-                    onClick = onAddRevenue
-                )
-                QuickActionButton(
-                    icon = Icons.AutoMirrored.Filled.TrendingDown,
-                    label = "Expense",
-                    color = Color(0xFFF44336),
-                    onClick = onAddExpense
-                )
-                QuickActionButton(
-                    icon = Icons.Default.SwapHoriz,
-                    label = "Transfer",
-                    color = Color(0xFF2196F3),
-                    onClick = onTransfer
-                )
-            }
+            // Mirrors the 48dp top row, so the balance sits at the card's center
+            Spacer(modifier = Modifier.height(48.dp))
         }
+    }
+}
+
+@Composable
+private fun QuickActionsRow(
+    onAddRevenue: () -> Unit,
+    onAddExpense: () -> Unit,
+    onTransfer: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        QuickActionButton(
+            icon = Icons.AutoMirrored.Filled.TrendingUp,
+            label = "Revenue",
+            color = Color(0xFF4CAF50),
+            onClick = onAddRevenue
+        )
+        QuickActionButton(
+            icon = Icons.AutoMirrored.Filled.TrendingDown,
+            label = "Expense",
+            color = Color(0xFFF44336),
+            onClick = onAddExpense
+        )
+        QuickActionButton(
+            icon = Icons.Default.SwapHoriz,
+            label = "Transfer",
+            color = Color(0xFF2196F3),
+            onClick = onTransfer
+        )
     }
 }
 
@@ -303,11 +395,10 @@ private fun QuickActionButton(
             .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
-        // White circle with a colored icon stays readable on any account color
         Box(
             modifier = Modifier
                 .size(44.dp)
-                .background(Color.White, CircleShape),
+                .background(color.copy(alpha = 0.15f), CircleShape),
             contentAlignment = Alignment.Center
         ) {
             // The label below describes the button
@@ -322,57 +413,6 @@ private fun QuickActionButton(
             text = label,
             style = MaterialTheme.typography.labelMedium
         )
-    }
-}
-
-@Composable
-fun RecentActivitySection(
-    accountId: String,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp)
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = "Recent Activity",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                TextButton(onClick = { /* Navigate to full operations list */ }) {
-                    Text("View All")
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Placeholder for recent operations
-            // You would fetch actual operations here
-            Text(
-                text = "No recent activity",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            // Example of how you might show operations when you have them:
-            /*
-            LazyColumn {
-                items(operations) { operation ->
-                    OperationListItem(operation = operation)
-                }
-            }
-            */
-        }
     }
 }
 
@@ -453,166 +493,6 @@ fun InformationRow(
 }
 
 @Composable
-fun StatisticsCard(
-    statistics: AccountStatistics,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        // Lighter than the default card grey
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp)
-        ) {
-            Text(
-                text = "Last 30 Days",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Medium
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Statistics Grid
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                // Revenue
-                StatisticItem(
-                    label = "Revenue",
-                    value = statistics.totalRevenue.toCurrencyString(),
-                    color = Color(0xFF4CAF50),
-                    modifier = Modifier.weight(1f)
-                )
-
-                // Expenses
-                StatisticItem(
-                    label = "Expenses",
-                    value = statistics.totalExpenses.toCurrencyString(),
-                    color = Color(0xFFF44336),
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                // Net Change
-                StatisticItem(
-                    label = "Net Change",
-                    value = statistics.netChange.toCurrencyString(),
-                    color = if (statistics.netChange >= 0) Color(0xFF4CAF50) else Color(0xFFF44336),
-                    modifier = Modifier.weight(1f)
-                )
-
-                // Transactions
-                StatisticItem(
-                    label = "Transactions",
-                    value = statistics.transactionCount.toString(),
-                    color = Color(0xFF2196F3),
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun StatisticItem(
-    label: String,
-    value: String,
-    color: Color,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier
-    ) {
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = color
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Composable
-fun RecentActivitySection(
-    operations: List<Operation>,
-    categoryNames: Map<String, String>,
-    isEmpty: Boolean,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        // Lighter than the default card grey
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp)
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = "Recent Activity",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Medium
-                )
-                if (operations.isNotEmpty()) {
-                    TextButton(onClick = { /* Navigate to full operations list */ }) {
-                        Text("View All")
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (isEmpty) {
-                Text(
-                    text = "No recent activity",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            } else {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.heightIn(max = 200.dp) // Set a maximum height
-                ) {
-                    items(operations) { operation ->
-                        OperationListItem(
-                            operation = operation,
-                            // Falls back to the stored id if the category is gone
-                            categoryName = categoryNames[operation.category] ?: operation.category
-                        )
-                    }
-                }
-
-            }
-        }
-    }
-}
-
-@Composable
 fun OperationListItem(
     operation: Operation,
     categoryName: String,
@@ -627,57 +507,98 @@ fun OperationListItem(
             Icons.AutoMirrored.Filled.CallMade to Color(0xFF2196F3)
         }
     }
-    // Sign by whether money came into this account or left it
-    val isMoneyIn = operation.type == OperationType.REVENUE ||
-        (operation.type == OperationType.TRANSFER && operation.isIncoming)
+    val isMoneyIn = operation.isMoneyIn
 
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    // Flat row: the day header above already shows the date
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .size(40.dp)
+                .background(color.copy(alpha = 0.15f), CircleShape),
+            contentAlignment = Alignment.Center
         ) {
-            // Icon and description
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = operation.type.name,
-                    tint = color,
-                    modifier = Modifier.size(20.dp)
-                )
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Column {
-                    Text(
-                        text = categoryName,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = operation.date.toString(),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            // Amount
-            Text(
-                text = (if (isMoneyIn) "+" else "-") + operation.amount.toCurrencyString(),
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold,
-                color = color
+            Icon(
+                imageVector = icon,
+                contentDescription = operation.type.name,
+                tint = color,
+                modifier = Modifier.size(20.dp)
             )
         }
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = categoryName,
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = operation.note.ifBlank { operation.type.label },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        // Money in stands out in green, money out stays neutral
+        Text(
+            text = (if (isMoneyIn) "+" else "-") + operation.amount.toCurrencyString(),
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Medium,
+            color = if (isMoneyIn) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+/** Whether money came into this account or left it. */
+private val Operation.isMoneyIn: Boolean
+    get() = type == OperationType.REVENUE || (type == OperationType.TRANSFER && isIncoming)
+
+private val Operation.signedAmount: Double
+    get() = if (isMoneyIn) amount else -amount
+
+private val OperationType.label: String
+    get() = when (this) {
+        OperationType.REVENUE -> "Revenue"
+        OperationType.EXPENSE -> "Expense"
+        OperationType.TRANSFER -> "Transfer"
+    }
+
+/** Date on the left, the day's net change in the top right corner. */
+@Composable
+private fun HistoryDayHeader(
+    date: LocalDate,
+    total: Double,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Text(
+            text = date.formatForOperations(),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            text = (if (total > 0) "+" else "") + total.toCurrencyString(),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

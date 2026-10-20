@@ -2,12 +2,16 @@ package dc.stashguard.core.domain.repository
 
 import dc.stashguard.core.domain.model.Operation
 import kotlinx.coroutines.flow.Flow
+import kotlinx.datetime.LocalDate
 
 interface OperationRepository {
     fun observeOperations(): Flow<List<Operation>>
 
-    /** Operations of one account, newest first. */
-    fun observeOperationsByAccount(accountId: String): Flow<List<Operation>>
+    /** The newest [limit] operations of one account, newest first. */
+    fun observeOperationsByAccount(accountId: String, limit: Int): Flow<List<Operation>>
+
+    /** Date -> how much that day's operations moved the account's balance (money in positive). */
+    fun observeDailyTotalsByAccount(accountId: String): Flow<Map<LocalDate, Double>>
 
     suspend fun getOperation(id: String): Operation?
 

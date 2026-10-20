@@ -4,6 +4,12 @@ import androidx.room.*
 import dc.stashguard.core.database.entity.OperationEntity
 import kotlinx.coroutines.flow.Flow
 
+/** Query result: how much one day's operations moved an account's balance. */
+data class DailyTotal(
+    val date: String, // ISO date format: "2024-01-15"
+    val total: Double
+)
+
 @Dao
 interface OperationDao {
 
@@ -18,8 +24,18 @@ interface OperationDao {
     @Query("SELECT * FROM operations")
     fun getAllOperations(): Flow<List<OperationEntity>>
 
-    @Query("SELECT * FROM operations WHERE account_id = :accountId ORDER BY date DESC, created_at DESC")
-    fun getOperationsByAccount(accountId: String): Flow<List<OperationEntity>>
+    @Query("SELECT * FROM operations WHERE account_id = :accountId ORDER BY date DESC, created_at DESC LIMIT :limit")
+    fun getOperationsByAccount(accountId: String, limit: Int): Flow<List<OperationEntity>>
+
+    // Money in (revenue, receiving side of a transfer) counts positive, money out negative
+    @Query(
+        """
+        SELECT date, SUM(CASE WHEN type = 'REVENUE' OR (type = 'TRANSFER' AND is_incoming = 1)
+            THEN amount ELSE -amount END) AS total
+        FROM operations WHERE account_id = :accountId GROUP BY date
+        """
+    )
+    fun getDailyTotalsByAccount(accountId: String): Flow<List<DailyTotal>>
 
     @Query("SELECT * FROM operations WHERE id = :operationId")
     suspend fun getOperationById(operationId: String): OperationEntity?

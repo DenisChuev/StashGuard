@@ -45,7 +45,7 @@ A new module needs an `include(...)` in `settings.gradle.kts`, a `build.gradle.k
 
 ## Architecture
 
-**Layers.** Each screen is a Compose screen plus a ViewModel (MVVM) that exposes `StateFlow`s. ViewModels depend on domain repository interfaces (`AccountRepository`, `OperationRepository`, `CategoryRepository`) for plain reads and writes, and on use cases for multi-step business logic (`AddOperationUseCase`, `UpdateOperationUseCase`, `DeleteAccountUseCase`, `AddAccountUseCase`, `CalculateAccountStatisticsUseCase`, `InitializeDefaultCategoriesUseCase`). ViewModels never touch DAOs or entities.
+**Layers.** Each screen is a Compose screen plus a ViewModel (MVVM) that exposes `StateFlow`s. ViewModels depend on domain repository interfaces (`AccountRepository`, `OperationRepository`, `CategoryRepository`) for plain reads and writes, and on use cases for multi-step business logic (`AddOperationUseCase`, `UpdateOperationUseCase`, `DeleteAccountUseCase`, `AddAccountUseCase`, `InitializeDefaultCategoriesUseCase`). ViewModels never touch DAOs or entities.
 
 **Models.** Domain models (`core/domain/model`) are framework-free: colors are ARGB `Int`s (`colorArgb`), and `:core:ui` turns them into Compose colors with the `Account.color` / `Category.color` extensions. Entities (`core/database/entity`) store enum types as their `name` strings. The mappers in `core/data/mapper` convert between the two. `Account.createdAt` is stored as epoch seconds and `Operation.createdAt` as epoch milliseconds.
 
