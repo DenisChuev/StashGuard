@@ -48,6 +48,7 @@ kotlin {
             implementation(projects.core.domain)
             implementation(projects.core.database)
             implementation(projects.core.data)
+            implementation(projects.core.ui)
             implementation(projects.feature.accounts)
             implementation(projects.feature.operations)
             implementation(projects.feature.categories)
