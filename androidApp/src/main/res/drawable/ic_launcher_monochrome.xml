@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- StashGuard launcher icon (monochrome, Android 13+ themed icon). Source: art/app-icon/ -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M30,54 A24,24 0 1,0 78,54 A24,24 0 1,0 30,54 Z M 54.000,39.495 C 57.445,41.668 60.678,42.728 64.070,43.046 Q 65.660,43.205 65.660,44.795 L 65.660,53.010 C 65.660,60.695 60.890,66.472 54.000,69.705 C 47.110,66.472 42.340,60.695 42.340,53.010 L 42.340,44.795 Q 42.340,43.205 43.930,43.046 C 47.322,42.728 50.555,41.668 54.000,39.495 Z"
+        android:fillColor="#FF000000"
+        android:fillType="evenOdd" />
+</vector>
