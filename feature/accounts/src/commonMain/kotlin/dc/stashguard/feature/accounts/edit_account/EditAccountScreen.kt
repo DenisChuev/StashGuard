@@ -9,15 +9,16 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -55,9 +56,9 @@ fun EditAccountScreen(
     val editingName by viewModel.editingAccountName.collectAsState()
     val editingBalance by viewModel.editingAccountBalance.collectAsState()
     val editingColor by viewModel.editingAccountColor.collectAsState()
-    val editingIsDebt by viewModel.editingAccountIsDebt.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
+    val isSaving by viewModel.isSaving.collectAsState()
 
     // Use a stateful screen pattern or handle loading/error directly here
     if (isLoading) {
@@ -77,6 +78,38 @@ fun EditAccountScreen(
 
     // State for color selection dialog (optional, if you want a picker)
     var showColorPicker by remember { mutableStateOf(false) }
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
+
+    if (showDeleteConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmation = false },
+            title = { Text("Delete account?") },
+            text = {
+                Text(
+                    "\"${account?.name}\" and all its operations will be deleted. " +
+                        "Transfers with other accounts stay in those accounts. This can't be undone."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteConfirmation = false
+                        viewModel.deleteAccount(onSuccess = onAccountDeleted)
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirmation = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     Scaffold(
         contentWindowInsets = WindowInsets(),
@@ -90,15 +123,7 @@ fun EditAccountScreen(
                 },
                 actions = {
                     IconButton(
-                        onClick = { viewModel.saveEditedAccount() }
-                    ) {
-                        Icon(Icons.Default.Save, contentDescription = "Save")
-                    }
-
-                    IconButton(
-                        onClick = {
-                            viewModel.deleteAccount(onSuccess = onAccountDeleted)
-                        }
+                        onClick = { showDeleteConfirmation = true }
                     ) {
                         Icon(Icons.Default.Delete, contentDescription = "Delete")
                     }
@@ -113,77 +138,83 @@ fun EditAccountScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Account Name Input
-            OutlinedTextField(
-                value = editingName,
-                onValueChange = { viewModel.updateEditingName(it) },
-                label = { Text("Account Name") },
-                placeholder = { Text("e.g., Savings, Credit Card") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            // Balance Input
-            BalanceInput(
-                balance = editingBalance,
-                onBalanceChange = { newBalance -> viewModel.updateEditingBalance(newBalance) },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            // Debt Toggle
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Checkbox(
-                    checked = editingIsDebt,
-                    onCheckedChange = { viewModel.updateEditingIsDebt(it) }
+                // Account Name Input
+                OutlinedTextField(
+                    value = editingName,
+                    onValueChange = { viewModel.updateEditingName(it) },
+                    label = { Text("Account Name") },
+                    placeholder = { Text("e.g., Savings, Credit Card") },
+                    modifier = Modifier.fillMaxWidth()
                 )
-                Text("This is a debt account")
-            }
 
-            // Color Selection (Example with a simple clickable box)
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text("Color:")
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(editingColor, shape = RoundedCornerShape(8.dp))
-                        .clickable { showColorPicker = true } // Show picker dialog
+                // Balance Input
+                BalanceInput(
+                    balance = editingBalance,
+                    onBalanceChange = { newBalance -> viewModel.updateEditingBalance(newBalance) },
+                    modifier = Modifier.fillMaxWidth()
                 )
-            }
 
-            // Example: Show Color Picker Dialog (you can reuse ColorSelectionGrid here)
-            if (showColorPicker) {
-                AlertDialog(
-                    onDismissRequest = { showColorPicker = false },
-                    title = { Text("Select Account Color") },
-                    text = {
-                        ColorSelectionGrid( // Assuming you have this composable from AddAccountScreen
-                            selectedColor = editingColor,
-                            onColorSelected = {
-                                viewModel.updateEditingColor(it)
-                                showColorPicker = false
+                // Color Selection (Example with a simple clickable box)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("Color:")
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(editingColor, shape = RoundedCornerShape(8.dp))
+                            .clickable { showColorPicker = true } // Show picker dialog
+                    )
+                }
+
+                // Example: Show Color Picker Dialog (you can reuse ColorSelectionGrid here)
+                if (showColorPicker) {
+                    AlertDialog(
+                        onDismissRequest = { showColorPicker = false },
+                        title = { Text("Select Account Color") },
+                        text = {
+                            ColorSelectionGrid( // Assuming you have this composable from AddAccountScreen
+                                selectedColor = editingColor,
+                                onColorSelected = {
+                                    viewModel.updateEditingColor(it)
+                                    showColorPicker = false
+                                }
+                            )
+                        },
+                        confirmButton = {
+                            TextButton(onClick = { showColorPicker = false }) {
+                                Text("Cancel")
                             }
-                        )
-                    },
-                    confirmButton = {
-                        TextButton(onClick = { showColorPicker = false }) {
-                            Text("Cancel")
                         }
-                    }
-                )
+                    )
+                }
+
+                // Error Message (if any during save attempt)
+                error?.let {
+                    Text(
+                        text = it,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
             }
 
-            // Error Message (if any during save attempt)
-            error?.let {
-                Text(
-                    text = it,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
-                )
+            // Same look as the Add Account button
+            Button(
+                onClick = { viewModel.saveEditedAccount(onSuccess = onNavigateBack) },
+                enabled = !isSaving,
+                shape = MaterialTheme.shapes.medium,
+                // As tall as the text fields above
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+            ) {
+                Text("Save")
             }
         }
     }

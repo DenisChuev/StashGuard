@@ -13,6 +13,7 @@ import dc.stashguard.core.domain.model.Account
 import dc.stashguard.core.domain.repository.AccountRepository
 import dc.stashguard.core.domain.usecase.DeleteAccountUseCase
 import dc.stashguard.core.ui.color
+import dc.stashguard.feature.accounts.add_account.DefaultAccountColor
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -54,11 +55,8 @@ class EditAccountViewModel(
     private val _editingAccountBalance = MutableStateFlow("")
     val editingAccountBalance: StateFlow<String> = _editingAccountBalance.asStateFlow()
 
-    private val _editingAccountColor = MutableStateFlow(Color(0xFF2196F3))
+    private val _editingAccountColor = MutableStateFlow(DefaultAccountColor)
     val editingAccountColor: StateFlow<Color> = _editingAccountColor.asStateFlow()
-
-    private val _editingAccountIsDebt = MutableStateFlow(false)
-    val editingAccountIsDebt: StateFlow<Boolean> = _editingAccountIsDebt.asStateFlow()
 
     // --- Derived states ---
     val isLoading: StateFlow<Boolean> = _accountFlow
@@ -72,6 +70,9 @@ class EditAccountViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    private val _isSaving = MutableStateFlow(false)
+    val isSaving: StateFlow<Boolean> = _isSaving.asStateFlow()
+
     // --- Initialize editing fields when account loads ---
     init {
         viewModelScope.launch {
@@ -81,7 +82,6 @@ class EditAccountViewModel(
                     _editingAccountName.value = account.name
                     _editingAccountBalance.value = account.balance.toBalanceString()
                     _editingAccountColor.value = account.color
-                    _editingAccountIsDebt.value = account.isDebt
                 }
             }
         }
@@ -103,40 +103,41 @@ class EditAccountViewModel(
         _editingAccountColor.value = newColor
     }
 
-    fun updateEditingIsDebt(isDebt: Boolean) {
-        _editingAccountIsDebt.value = isDebt
-    }
-
     // --- Function to save the edited account back to the database ---
-    fun saveEditedAccount(): Boolean {
+    /** Validates and saves the edits, then calls [onSuccess] once they are in the database. */
+    fun saveEditedAccount(onSuccess: () -> Unit) {
+        // Ignore repeated taps while the first save is running
+        if (_isSaving.value) return
+
         val name = _editingAccountName.value.trim()
         val balanceString = _editingAccountBalance.value.trim()
         val color = _editingAccountColor.value
-        val isDebt = _editingAccountIsDebt.value
 
         // Validate inputs before saving
         if (name.isBlank()) {
             _error.value = "Account name is required."
-            return false
+            return
         }
 
         if (balanceString.isBlank()) {
             _error.value = "Balance is required."
-            return false
+            return
         }
 
         val balance = balanceString.toBalanceDouble()
         if (balance == null) {
             _error.value = "Balance must be a valid number."
-            return false
+            return
         }
 
         // Same limit as the balance field's error state
         if (balance !in -1_000_000_000.0..1_000_000_000.0) {
             _error.value = "Balance must be between -1B and 1B."
-            return false
+            return
         }
 
+        _isSaving.value = true
+        _error.value = null
         viewModelScope.launch {
             try {
                 // Get current account to preserve other fields
@@ -146,21 +147,23 @@ class EditAccountViewModel(
                     val updatedAccount = currentAccount.copy(
                         name = name,
                         balance = balance,
-                        colorArgb = color.toArgb(),
-                        isDebt = isDebt
+                        colorArgb = color.toArgb()
                     )
 
                     // Update the database - this will automatically trigger the flow update
                     accountRepository.updateAccount(updatedAccount)
+                    // isSaving stays true so the button is not tappable while the screen closes
+                    onSuccess()
                 } else {
                     _error.value = "Account data not available for update."
+                    _isSaving.value = false
                 }
             } catch (e: Exception) {
+                logger.e(e) { "Error saving account" }
                 _error.value = "Error saving account: ${e.message}"
+                _isSaving.value = false
             }
         }
-
-        return true
     }
 
     fun deleteAccount(onSuccess: () -> Unit) {

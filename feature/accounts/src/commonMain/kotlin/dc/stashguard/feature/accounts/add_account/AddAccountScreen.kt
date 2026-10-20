@@ -8,10 +8,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -22,7 +22,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,7 +37,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -56,6 +54,29 @@ import kotlin.time.ExperimentalTime
 
 private val logger = Logger.withTag("AddAccountScreen")
 
+/** The theme's indigo (primaryContainer). */
+val DefaultAccountColor = Color(0xFF3F51B5)
+
+/**
+ * Twelve clearly different hues, three rows of four. Account cards always draw their text in
+ * white; all but the yellow keep at least 3:1 contrast with it (the WCAG AA level for large or
+ * bold text).
+ */
+private val accountColors = listOf(
+    DefaultAccountColor,
+    Color(0xFF0288D1), // Light Blue 700, a sky blue
+    Color(0xFF00897B), // Teal 600
+    Color(0xFF43A047), // Green 600
+    Color(0xFFFBC02D), // Yellow 700
+    Color(0xFFEF6C00), // Orange 800
+    Color(0xFFF44336), // Red 500
+    Color(0xFFFF4081), // Pink A200
+    Color(0xFFAB47BC), // Purple 400
+    Color(0xFF8E2442), // Burgundy
+    Color(0xFF8D6E63), // Brown 400
+    Color(0xFF37474F)  // Blue Grey 800, a graphite
+)
+
 @Composable
 fun AddAccountScreen(
     onAccountAdded: (Account) -> Unit = {},
@@ -64,8 +85,7 @@ fun AddAccountScreen(
     val viewModel: AddAccountViewModel = koinViewModel()
     var accountName by remember { mutableStateOf("") }
     var accountBalance by remember { mutableStateOf("") }
-    var selectedColor by remember { mutableStateOf(Color(0xFF2196F3)) } // Default blue
-    var isDebt by remember { mutableStateOf(false) }
+    var selectedColor by remember { mutableStateOf(DefaultAccountColor) }
     var showError by remember { mutableStateOf(false) }
     val isSaving by viewModel.isSaving.collectAsState()
     val saveError by viewModel.error.collectAsState()
@@ -116,18 +136,6 @@ fun AddAccountScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                // Debt Toggle
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Checkbox(
-                        checked = isDebt,
-                        onCheckedChange = { isDebt = it }
-                    )
-                    Text("This is a debt account")
-                }
-
                 // Color Selection
                 Text("Select Account Color")
                 ColorSelectionGrid(
@@ -162,8 +170,7 @@ fun AddAccountScreen(
                         val newAccount = Account(
                             name = accountName.trim(),
                             balance = balanceValue,
-                            colorArgb = selectedColor.toArgb(),
-                            isDebt = isDebt
+                            colorArgb = selectedColor.toArgb()
                         )
                         logger.d("Try to add new account: $newAccount")
 
@@ -179,7 +186,11 @@ fun AddAccountScreen(
                     }
                 },
                 enabled = !isSaving,
-                modifier = Modifier.fillMaxWidth()
+                shape = MaterialTheme.shapes.medium,
+                // As tall as the text fields above
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
             ) {
                 Text("Add Account")
             }
@@ -256,25 +267,12 @@ fun ColorSelectionGrid(
     selectedColor: Color,
     onColorSelected: (Color) -> Unit
 ) {
-    val colors = listOf(
-        Color(0xFFFF4081), // Pink
-        Color(0xFFE91E63), // Red
-        Color(0xFFFFC107), // Amber
-        Color(0xFF2196F3), // Blue
-        Color(0xFF64B5F6), // Light Blue
-        Color(0xFF4CAF50), // Green
-        Color(0xFF9E9E9E), // Gray
-        Color(0xFFFF5722), // Deep Orange
-        Color(0xFF795548), // Brown
-        Color(0xFF9C27B0)  // Purple
-    )
-
     LazyVerticalGrid(
-        columns = GridCells.Fixed(5),
+        columns = GridCells.Fixed(4),
         verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(colors) { color ->
+        items(accountColors) { color ->
             Box(
                 modifier = Modifier
                     .size(40.dp)
