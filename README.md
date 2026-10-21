@@ -1,4 +1,6 @@
 # 🛡️ StashGuard
+[![CI](https://github.com/DenisChuev/StashGuard/actions/workflows/ci.yml/badge.svg)](https://github.com/DenisChuev/StashGuard/actions/workflows/ci.yml)
+
 *Guarding Your Stash. Building Your Freedom.*
 
 StashGuard is a personal finance app built for people who think ahead. 
@@ -9,11 +11,12 @@ Designed with Kotlin Multiplatform, it helps you save intentionally, track goals
 
 ## ✨ Features
 
-- **Accounts** — create, edit and color-code accounts, mark debt accounts, and see the total balance at a glance
+- **Accounts** — create, edit and color-code accounts, and see the total balance at a glance
 - **Custom order** — long-press an account and drag it to rearrange the list
-- **Operations** — record revenue, expenses and transfers between accounts, and edit them later; balances update automatically
-- **Categories** — organize operations with categories (a default set is created on first launch)
-- **Account details** — last 30 days of revenue, expenses and net change, plus recent activity
+- **Operations** — record revenue, expenses and transfers between accounts, then edit or delete them; balances update automatically
+- **Categories** — a default set is created on first launch; rename them, change their type, color and icon, or add your own. A category that operations use can't be deleted
+- **Account details** — the account's full history grouped by day, each day with its net change, and quick buttons to add revenue, expenses or a transfer
+- **Light and dark theme** — Material 3, following the system setting
 - **Offline-first** — all data stays on the device
 
 ## 🛠️ Tech Stack
@@ -28,6 +31,8 @@ Designed with Kotlin Multiplatform, it helps you save intentionally, track goals
 | **Data Storage** | Room (KMP) with bundled SQLite |
 | **Dependency Injection** | Koin |
 | **Logging** | Kermit |
+| **Testing** | `kotlin.test`, `kotlinx-coroutines-test`, Turbine; in-memory fakes and in-memory Room |
+| **CI** | GitHub Actions: Android build + JVM tests on Ubuntu, iOS compile + simulator tests on macOS |
 | **Build** | Gradle 9.6, AGP 9.4, Kotlin 2.4 |
 
 ## 📁 Project Structure
@@ -38,13 +43,14 @@ iosApp/                 Xcode project — SwiftUI entry point that hosts the Com
 composeApp/             App shell shared by Android and iOS — navigation, Koin wiring, iOS framework
 feature/accounts/       Accounts list, add / edit account, account details (screens + ViewModels)
 feature/operations/     Operations list, add / edit operation
-feature/categories/     Categories list
+feature/categories/     Categories list, add / edit category
 core/domain/            Models, repository interfaces and use cases (pure Kotlin)
 core/data/              Repository implementations, entity <-> model mappers
 core/database/          Room database, entities and DAOs
 core/ui/                Compose helpers shared by the features
 core/common/            Date and currency utilities
 build-logic/            Gradle convention plugins (stashguard.kmp.library / .compose / .feature)
+.github/workflows/      CI workflow
 ```
 
 Dependencies point inwards: `feature:*` → `core:domain` ← `core:data` → `core:database`.
@@ -62,16 +68,29 @@ Requirements: JDK 17+, Android Studio (or the Android SDK with API 37), and Xcod
 
 To run on iOS, open `iosApp/iosApp.xcodeproj` in Xcode and run the `iosApp` scheme.
 
+## 🧪 Testing
+
+```bash
+./gradlew testAndroidHostTest       # all tests on the JVM
+./gradlew iosSimulatorArm64Test     # all tests on the iOS simulator (needs Xcode)
+```
+
+- **Use cases** (`core/domain/src/commonTest`) run against in-memory fake repositories and check the resulting balances and stored operations, including both sides of transfers. They run on both the JVM and iOS.
+- **DAOs and transactions** (`core/database` and `core/data`, in `iosTest`) run against a real in-memory Room database, including a check that a failed transaction rolls back all its writes. They run on the iOS simulator only, because Room on the Android JVM needs a `Context` and the bundled SQLite driver has no native library for the host.
+- Every push to `main` and every pull request runs both suites in CI.
+
 ## 🗺️ Roadmap
 
-**Phase 1 — first store release (autumn 2026)**
+**Phase 1 — first store release (December 2026)**
 
+- ✅ CI with tests (`commonTest`, Turbine) for use cases, DAOs and transactions
+- ✅ Editable categories
+- Code coverage (Kover), static analysis (detekt), ViewModel tests, signed release builds from CI
 - MVI presentation layer and kotlin-inject for DI
-- CI with tests (`commonTest`, Turbine) and code coverage
 - Currency per account with exchange rates
+- Design system (colors, typography, shared components) and a light / dark / system theme setting
 - Reports and charts by category and period
 - Recurring operations
-- Design system (colors, typography, shared components) with light, dark and system themes
 - Biometric lock and database encryption
 - Release in Google Play, App Store, RuStore and Huawei AppGallery
 
