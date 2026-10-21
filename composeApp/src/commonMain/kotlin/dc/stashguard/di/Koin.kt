@@ -39,18 +39,21 @@ private val logger = Logger.withTag("Koin")
 // Lives as long as the app process, for startup work that isn't tied to a screen
 private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
+/** Every module the app starts with; KoinGraphTest verifies the same list. */
+val appModules = listOf(
+    databaseModule,
+    dataModule,
+    domainModule,
+    accountsModule,
+    operationsModule,
+    categoriesModule,
+)
+
 /** Starts Koin, then seeds the default categories. Called once at app startup. */
 fun initKoin(appDeclaration: KoinAppDeclaration = {}) {
     val koin = startKoin {
         appDeclaration()
-        modules(
-            databaseModule,
-            dataModule,
-            domainModule,
-            accountsModule,
-            operationsModule,
-            categoriesModule,
-        )
+        modules(appModules)
     }.koin
 
     seedDefaultCategories(koin)

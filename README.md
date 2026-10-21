@@ -77,16 +77,17 @@ To run on iOS, open `iosApp/iosApp.xcodeproj` in Xcode and run the `iosApp` sche
 
 - **Use cases** (`core/domain/src/commonTest`) run against in-memory fake repositories and check the resulting balances and stored operations, including both sides of transfers. They run on both the JVM and iOS.
 - **DAOs and transactions** (`core/database` and `core/data`, in `iosTest`) run against a real in-memory Room database, including a check that a failed transaction rolls back all its writes. They run on the iOS simulator only, because Room on the Android JVM needs a `Context` and the bundled SQLite driver has no native library for the host.
-- Every push to `main` and every pull request runs both suites in CI.
+- **Dependency graph** (`composeApp/src/androidHostTest`): Koin's `verify()` checks that every use case and ViewModel dependency is registered, so a missing one fails CI instead of crashing a screen.
+- Every push to `main` and every pull request runs all of these in CI.
 
 ## 🗺️ Roadmap
 
 **Phase 1 — first store release (December 2026)**
 
-- ✅ CI with tests (`commonTest`, Turbine) for use cases, DAOs and transactions
+- ✅ CI with tests (`commonTest`, Turbine) for use cases, DAOs, transactions and the Koin graph
 - ✅ Editable categories
 - Code coverage (Kover), static analysis (detekt), ViewModel tests, signed release builds from CI
-- MVI presentation layer and kotlin-inject for DI
+- MVI presentation layer
 - Currency per account with exchange rates
 - Design system (colors, typography, shared components) and a light / dark / system theme setting
 - Reports and charts by category and period

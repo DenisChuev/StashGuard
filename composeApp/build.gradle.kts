@@ -63,5 +63,8 @@ kotlin {
             implementation(libs.kermit)
             implementation(libs.kotlinx.coroutines.core)
         }
+        getByName("androidHostTest").dependencies {
+            implementation(libs.koin.test)
+        }
     }
 }

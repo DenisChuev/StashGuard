@@ -62,6 +62,7 @@ A new module needs an `include(...)` in `settings.gradle.kts`, a `build.gradle.k
 - `databaseModule` (`:core:database`) provides `AppDatabase` (through `internal expect fun databasePlatformModule()`, see `DatabasePlatformModule.{android,ios}.kt`) and the DAOs.
 - `dataModule` (`:core:data`) binds the repository interfaces to their implementations.
 - `domainModule` (in `:composeApp`'s `di/Koin.kt`) registers the use cases as factories, which keeps `:core:domain` free of Koin. A new use case must be registered there.
+- `appModules` (in `di/Koin.kt`) lists every module `initKoin` starts. `KoinGraphTest` (`composeApp/src/androidHostTest`) runs Koin's `verify()` on that list, so a missing registration fails the build in CI. A ViewModel that takes `parametersOf` arguments must also be added to the test's `injectedParameters`.
 - Each feature has its own module (`accountsModule`, `operationsModule`, `categoriesModule`) registering its ViewModels. A new ViewModel must be registered in its feature's module.
 - ViewModels that take parameters (such as `accountId`) are declared as `viewModel { (id: String) -> ... }`, and screens get them with `koinViewModel { parametersOf(id) }`.
 - `initKoin` (in `:composeApp`) is called once at app startup: from `StashGuardApp.onCreate()` (in `:androidApp`) on Android, and from `iOSApp.init()` in Swift on iOS (through `setupKoin()` in `MainViewController.kt`). After starting Koin it seeds the default categories (`InitializeDefaultCategoriesUseCase`) in an app-lifetime coroutine scope, so they exist before any screen needs them.
