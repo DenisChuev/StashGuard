@@ -9,6 +9,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 /**
  * Kotlin Multiplatform library targeting Android and iOS.
  * The Android namespace is derived from the project path, e.g. `:core:domain` -> `dc.stashguard.core.domain`.
+ * Tests go in `commonTest` and run on the JVM (Android host tests) and on the iOS simulator.
  */
 class KmpLibraryConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {
@@ -26,10 +27,19 @@ class KmpLibraryConventionPlugin : Plugin<Project> {
                 compilerOptions {
                     jvmTarget.set(JvmTarget.JVM_11)
                 }
+
+                // Runs commonTest on the JVM, without a device: `testAndroidHostTest`
+                withHostTest {}
             }
 
             iosArm64()
             iosSimulatorArm64()
+
+            commonTestDependencies {
+                implementation(libs.library("kotlin-test"))
+                implementation(libs.library("kotlinx-coroutines-test"))
+                implementation(libs.library("turbine"))
+            }
         }
     }
 }

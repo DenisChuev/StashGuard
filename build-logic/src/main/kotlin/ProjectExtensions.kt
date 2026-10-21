@@ -19,3 +19,7 @@ internal fun VersionCatalog.intVersion(alias: String): Int =
 internal fun KotlinMultiplatformExtension.commonMainDependencies(block: KotlinDependencyHandler.() -> Unit) {
     sourceSets.getByName("commonMain").dependencies(block)
 }
+
+internal fun KotlinMultiplatformExtension.commonTestDependencies(block: KotlinDependencyHandler.() -> Unit) {
+    sourceSets.getByName("commonTest").dependencies(block)
+}

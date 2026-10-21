@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# A newer push to the same branch or PR cancels the run in progress
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    name: Android build and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 25
+
+      # Caches Gradle dependencies and validates the wrapper
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Build the debug APK
+        run: ./gradlew :androidApp:assembleDebug
+
+      - name: Run tests on the JVM
+        run: ./gradlew testAndroidHostTest
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-test-reports
+          path: '**/build/reports/tests/'
+
+  ios:
+    name: iOS compile and tests
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 25
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      # Kotlin/Native downloads its compiler and dependencies here (not covered by setup-gradle)
+      - uses: actions/cache@v6
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+
+      - name: Compile the iOS code
+        run: ./gradlew :composeApp:compileKotlinIosSimulatorArm64
+
+      - name: Run tests on the iOS simulator
+        run: ./gradlew iosSimulatorArm64Test
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-test-reports
+          path: '**/build/reports/tests/'

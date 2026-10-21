@@ -30,9 +30,16 @@ The JS/Wasm targets in `composeApp/build.gradle.kts` and the `:server` module in
 ./gradlew :androidApp:installDebug                          # install on a connected device or emulator
 ./gradlew :composeApp:compileKotlinIosSimulatorArm64        # compile-check the iOS code
 ./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64   # build the iOS framework
+./gradlew testAndroidHostTest                               # run all tests on the JVM
+./gradlew :core:domain:testAndroidHostTest --tests '*UpdateOperationUseCaseTest'  # one module / class
+./gradlew iosSimulatorArm64Test                             # run all tests on the iOS simulator (needs Xcode selected)
 ```
 
-Run the iOS app by opening `iosApp/iosApp.xcodeproj` in Xcode. There is no test source set (`commonTest` is commented out in the build file) and no lint or format config.
+Run the iOS app by opening `iosApp/iosApp.xcodeproj` in Xcode. There is no lint or format config yet.
+
+**Tests.** `stashguard.kmp.library` gives every module a `commonTest` source set (`kotlin-test`, `kotlinx-coroutines-test`, Turbine) that runs on the JVM as Android host tests and on the iOS simulator. Use case tests live in `core/domain/src/commonTest` and run against in-memory fakes (`fake/Fake*Repository`, `FakeTransactionRunner`, builders in `fake/TestData.kt`), not mocks: they assert resulting balances and stored operations. A behavior change to a use case needs a matching test change, and a bug fix needs a regression test.
+
+**CI.** `.github/workflows/ci.yml` runs on every push to `main` and on PRs: the Android job builds the debug APK and runs `testAndroidHostTest` on Ubuntu, the iOS job compiles the iOS code and runs `iosSimulatorArm64Test` on macOS.
 
 Dependency versions live in `gradle/libs.versions.toml`.
 
