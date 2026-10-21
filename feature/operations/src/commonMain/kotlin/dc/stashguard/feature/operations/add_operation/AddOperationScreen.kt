@@ -3,9 +3,9 @@
 package dc.stashguard.feature.operations.add_operation
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -17,9 +17,11 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -29,13 +31,12 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
-import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Computer
-import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material.icons.filled.Movie
@@ -45,22 +46,26 @@ import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Work
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -75,6 +80,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dc.stashguard.core.common.CURRENCY_SYMBOL
+import dc.stashguard.core.common.DateUtils
+import dc.stashguard.core.common.formatReadable
 import dc.stashguard.core.common.toCurrencyString
 import dc.stashguard.core.domain.model.Account
 import dc.stashguard.core.domain.model.Category
@@ -83,7 +90,13 @@ import dc.stashguard.core.domain.model.OperationType
 import dc.stashguard.core.ui.BalanceVisualTransformation
 import dc.stashguard.core.ui.color
 import dc.stashguard.core.ui.icon
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.format
+import kotlinx.datetime.format.DayOfWeekNames
+import kotlinx.datetime.format.MonthNames
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -151,9 +164,8 @@ fun CategorySelectionSection(
 
     val selectedCategory = availableCategories.find { it.id == selectedCategoryId }
 
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ElevatedCard(
+        modifier = modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -209,22 +221,23 @@ fun CategoryChip(
     onSelect: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Flat inside the section's card, so selection shows by color rather than stacked shadows
     Card(
         modifier = modifier,
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isSelected) 4.dp else 1.dp
-        ),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) {
                 category.color.copy(alpha = 0.2f)
             } else {
-                MaterialTheme.colorScheme.surfaceVariant
+                MaterialTheme.colorScheme.surfaceContainerHigh
             }
         ),
         onClick = onSelect
     ) {
+        // Full width so the icon and name are centered in the grid cell
         Column(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
@@ -311,9 +324,8 @@ fun SelectedCategoryPreview(
 fun FixedTransferCategorySection(
     modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ElevatedCard(
+        modifier = modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier
@@ -424,63 +436,68 @@ fun AddOperationContent(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Amount Input
-        AmountInputSection(
-            amount = state.amount,
-            onAmountChange = onAmountChange,
-            operationType = operationType
-        )
-
-        // Category Selection (for all operation types except transfer)
-        if (operationType != OperationType.TRANSFER) {
-            CategorySelectionSection(
-                selectedCategoryId = state.categoryId,
-                availableCategories = availableCategories,
-                onCategoryChange = onCategoryChange,
+        // The form scrolls while the save button stays at the bottom, as in Add Account
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            // Amount Input
+            AmountInputSection(
+                amount = state.amount,
+                onAmountChange = onAmountChange,
                 operationType = operationType
             )
-        } else {
-            // For transfers, use a fixed "Transfer" category
-            FixedTransferCategorySection()
-        }
 
-        // To Account Selection (for Transfer)
-        if (operationType == OperationType.TRANSFER) {
-            TransferAccountSection(
-                title = if (isIncomingTransfer) "Transfer From" else "Transfer To",
-                toAccountId = state.toAccountId,
-                availableAccounts = availableAccounts,
-                currentAccountId = currentAccountId,
-                onToAccountChange = onToAccountChange
+            // Category Selection (for all operation types except transfer)
+            if (operationType != OperationType.TRANSFER) {
+                CategorySelectionSection(
+                    selectedCategoryId = state.categoryId,
+                    availableCategories = availableCategories,
+                    onCategoryChange = onCategoryChange,
+                    operationType = operationType
+                )
+            } else {
+                // For transfers, use a fixed "Transfer" category
+                FixedTransferCategorySection()
+            }
+
+            // To Account Selection (for Transfer)
+            if (operationType == OperationType.TRANSFER) {
+                TransferAccountSection(
+                    title = if (isIncomingTransfer) "Transfer From" else "Transfer To",
+                    toAccountId = state.toAccountId,
+                    availableAccounts = availableAccounts,
+                    currentAccountId = currentAccountId,
+                    onToAccountChange = onToAccountChange
+                )
+            }
+
+            // Date Selection
+            DateSelectionSection(
+                date = state.date,
+                onDateChange = onDateChange
             )
-        }
 
-        // Date Selection
-        DateSelectionSection(
-            date = state.date,
-            onDateChange = onDateChange
-        )
-
-        // Note Input
-        NoteInputSection(
-            note = state.note,
-            onNoteChange = onNoteChange
-        )
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        // Error Message
-        state.error?.let { error ->
-            Text(
-                text = error,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.fillMaxWidth()
+            // Note Input
+            NoteInputSection(
+                note = state.note,
+                onNoteChange = onNoteChange
             )
+
+            // Error Message
+            state.error?.let { error ->
+                Text(
+                    text = error,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
 
         // Save Button
@@ -507,9 +524,8 @@ fun AmountInputSection(
         OperationType.TRANSFER -> "Transfer Amount"
     }
 
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ElevatedCard(
+        modifier = modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -561,9 +577,8 @@ fun TransferAccountSection(
 ) {
     val filteredAccounts = availableAccounts.filter { it.id != currentAccountId }
 
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ElevatedCard(
+        modifier = modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -605,14 +620,12 @@ fun AccountSelectionItem(
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isSelected) 4.dp else 1.dp
-        ),
+        // Flat inside the section's card, so selection shows by color rather than stacked shadows
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) {
                 MaterialTheme.colorScheme.primaryContainer
             } else {
-                MaterialTheme.colorScheme.surface
+                MaterialTheme.colorScheme.surfaceContainerHigh
             }
         ),
         onClick = onSelect
@@ -653,68 +666,196 @@ fun AccountSelectionItem(
     }
 }
 
+/** How far back the day strip reaches; an operation's own older date is always included. */
+private const val DATE_STRIP_DAYS_BACK = 365
+
+private val weekdayFormat = LocalDate.Format { dayOfWeek(DayOfWeekNames.ENGLISH_ABBREVIATED) }
+private val monthFormat = LocalDate.Format { monthName(MonthNames.ENGLISH_ABBREVIATED) }
+
+/**
+ * A strip of days swiped left (back in time) and right (towards today), ending at today.
+ * The selected day, today by default, is scrolled into view. The calendar button before the
+ * strip picks any past date, and the strip then reaches back to it.
+ */
 @Composable
 fun DateSelectionSection(
     date: LocalDate,
     onDateChange: (LocalDate) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val today = remember { DateUtils.currentDate() }
+    val firstDay = minOf(today.minus(DATE_STRIP_DAYS_BACK, DateTimeUnit.DAY), date)
+    val dayCount = (today.toEpochDays() - firstDay.toEpochDays()).toInt() + 1
+    val selectedIndex = (date.toEpochDays() - firstDay.toEpochDays()).toInt()
+    // A couple of earlier days stay visible to the left of the selected one
+    val leadIndex = (selectedIndex - 2).coerceAtLeast(0)
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = leadIndex)
     var showDatePicker by remember { mutableStateOf(false) }
 
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    // Follow the selection when it isn't visible: Edit Operation loads its date after the first
+    // frame, and a date from the calendar can be anywhere in the strip
+    LaunchedEffect(date) {
+        val visible = listState.layoutInfo.visibleItemsInfo.map { it.index }
+        if (selectedIndex !in visible) listState.scrollToItem(leadIndex)
+    }
+
+    ElevatedCard(
+        modifier = modifier.fillMaxWidth()
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(vertical = 16.dp)
         ) {
-            Text(
-                text = "Date",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(modifier = Modifier.height(12.dp))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { showDatePicker = true },
+                    .padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.DateRange,
-                    contentDescription = "Date",
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(16.dp))
                 Text(
-                    text = date.toString(),
-                    style = MaterialTheme.typography.bodyLarge,
+                    text = "Date",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
-                Icon(
-                    imageVector = Icons.Default.ArrowDropDown,
-                    contentDescription = "Select date"
+                Text(
+                    text = if (date == today) "Today" else date.formatReadable(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // The gap sits outside the strip, so days cut off at its edge stay clear of the button
+                FilledTonalIconButton(
+                    onClick = { showDatePicker = true },
+                    modifier = Modifier.padding(start = 16.dp, end = 12.dp)
+                ) {
+                    Icon(Icons.Default.CalendarMonth, contentDescription = "Pick a date")
+                }
+                LazyRow(
+                    state = listState,
+                    contentPadding = PaddingValues(end = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    items(count = dayCount) { index ->
+                        val day = firstDay.plus(index, DateTimeUnit.DAY)
+                        DayItem(
+                            day = day,
+                            isSelected = day == date,
+                            isToday = day == today,
+                            onSelect = { onDateChange(day) }
+                        )
+                    }
+                }
             }
         }
     }
 
-    // Simple date picker dialog (you might want to use a proper date picker library)
     if (showDatePicker) {
-        AlertDialog(
-            onDismissRequest = { showDatePicker = false },
-            title = { Text("Select Date") },
-            text = {
-                // For now, just show current date
-                // In a real app, you'd use a proper date picker component
-                Text("Selected: ${date.toString()}")
-            },
-            confirmButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text("OK")
-                }
-            }
+        OperationDatePickerDialog(
+            date = date,
+            today = today,
+            onDateChange = onDateChange,
+            onDismiss = { showDatePicker = false }
         )
+    }
+}
+
+private const val MILLIS_PER_DAY = 24 * 60 * 60 * 1000L
+
+/** The Material date picker works in UTC milliseconds at the start of the day. */
+@Composable
+private fun OperationDatePickerDialog(
+    date: LocalDate,
+    today: LocalDate,
+    onDateChange: (LocalDate) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val todayMillis = today.toEpochDays() * MILLIS_PER_DAY
+    val pickerState = rememberDatePickerState(
+        initialSelectedDateMillis = date.toEpochDays() * MILLIS_PER_DAY,
+        // Same range as the strip: nothing after today
+        selectableDates = object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis <= todayMillis
+            override fun isSelectableYear(year: Int) = year <= today.year
+        }
+    )
+
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    pickerState.selectedDateMillis?.let {
+                        onDateChange(LocalDate.fromEpochDays(it / MILLIS_PER_DAY))
+                    }
+                    onDismiss()
+                },
+                enabled = pickerState.selectedDateMillis != null
+            ) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    ) {
+        DatePicker(state = pickerState)
+    }
+}
+
+@Composable
+private fun DayItem(
+    day: LocalDate,
+    isSelected: Boolean,
+    isToday: Boolean,
+    onSelect: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val contentColor = when {
+        isSelected -> MaterialTheme.colorScheme.onPrimary
+        isToday -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+    // Flat inside the section's card, like the category and account choices
+    Card(
+        onClick = onSelect,
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.surfaceContainerHigh
+            },
+            contentColor = contentColor
+        ),
+        // Wide enough that about four and a half days show, so the cut-off one hints at swiping
+        modifier = modifier.width(76.dp)
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 10.dp)
+        ) {
+            Text(text = day.format(weekdayFormat), style = MaterialTheme.typography.labelMedium)
+            Row {
+                Text(
+                    text = day.day.toString(),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.alignByBaseline()
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = day.format(monthFormat),
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.alignByBaseline()
+                )
+            }
+        }
     }
 }
 
@@ -724,9 +865,8 @@ fun NoteInputSection(
     onNoteChange: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ElevatedCard(
+        modifier = modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -768,35 +908,13 @@ fun SaveOperationButton(
         else -> "Complete Transfer"
     }
 
-    val buttonColors = when (operationType) {
-        OperationType.REVENUE -> ButtonDefaults.buttonColors(
-            containerColor = Color(0xFF4CAF50)
-        )
-
-        OperationType.EXPENSE -> ButtonDefaults.buttonColors(
-            containerColor = Color(0xFFF44336)
-        )
-
-        OperationType.TRANSFER -> ButtonDefaults.buttonColors(
-            containerColor = Color(0xFF2196F3)
-        )
-    }
-
     Button(
         onClick = onSave,
-        modifier = modifier,
         enabled = !isLoading,
-        colors = buttonColors
+        shape = MaterialTheme.shapes.medium,
+        // As tall as the text fields above, like Add Account's button
+        modifier = modifier.height(56.dp)
     ) {
-        if (isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(20.dp),
-                color = MaterialTheme.colorScheme.onPrimary
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Saving...")
-        } else {
-            Text(buttonText, style = MaterialTheme.typography.titleMedium)
-        }
+        Text(buttonText)
     }
 }
