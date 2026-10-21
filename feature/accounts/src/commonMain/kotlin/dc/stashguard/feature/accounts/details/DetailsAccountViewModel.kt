@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
 import dc.stashguard.core.domain.model.Account
+import dc.stashguard.core.domain.model.Category
 import dc.stashguard.core.domain.model.Operation
 import dc.stashguard.core.domain.repository.AccountRepository
 import dc.stashguard.core.domain.repository.CategoryRepository
@@ -82,9 +83,18 @@ class DetailsAccountViewModel(
             initialValue = emptyMap()
         )
 
-    /** Category id -> name. Operations store the category id. */
-    val categoryNames: StateFlow<Map<String, String>> = categoryRepository.observeCategories()
-        .map { categories -> categories.associate { it.id to it.name } }
+    /** Category id -> category, for each history row's name and icon. Operations store the category id. */
+    val categories: StateFlow<Map<String, Category>> = categoryRepository.observeCategories()
+        .map { categories -> categories.associateBy { it.id } }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyMap()
+        )
+
+    /** Account id -> name, for the other side of transfers. */
+    val accountNames: StateFlow<Map<String, String>> = accountRepository.observeAccounts()
+        .map { accounts -> accounts.associate { it.id to it.name } }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -134,4 +144,17 @@ class DetailsAccountViewModel(
     fun clearError() {
         _error.value = null
     }
+}
+
+/**
+ * A transfer's account names as (from, to), seen from the account named [accountName].
+ * The other account may have been deleted, so it isn't always in [accountNames].
+ */
+internal fun transferAccounts(
+    operation: Operation,
+    accountName: String,
+    accountNames: Map<String, String>
+): Pair<String, String> {
+    val otherName = operation.toAccountId?.let { accountNames[it] } ?: "Deleted account"
+    return if (operation.isIncoming) otherName to accountName else accountName to otherName
 }

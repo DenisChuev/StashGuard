@@ -83,6 +83,9 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                     onNavigateAddOperation = { accountId, operationType ->
                         navigationState.navigate(AddOperation(accountId, operationType))
                     },
+                    onNavigateToEditOperation = { accountId, operationId, operationType ->
+                        navigationState.navigate(EditOperation(accountId, operationId, operationType))
+                    },
                     onNavigateBack = navigationState::goBack
                 )
             }
