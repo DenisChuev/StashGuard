@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dc.stashguard.core.domain.model.Category
 import dc.stashguard.core.domain.model.CategoryType
-import dc.stashguard.core.domain.model.isTransfer
 import dc.stashguard.core.ui.color
 import dc.stashguard.core.ui.icon
 import dc.stashguard.feature.categories.add_category.label
@@ -174,80 +173,48 @@ fun CategoryListItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Transfer is built in and can't be edited, so its card isn't clickable
-    val isEditable = !category.isTransfer
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        enabled = isEditable,
-        // Keep the read-only Transfer card looking like the others instead of greyed out
-        colors = CardDefaults.cardColors(
-            disabledContainerColor = CardDefaults.cardColors().containerColor,
-            disabledContentColor = CardDefaults.cardColors().contentColor
-        ),
-        onClick = onClick
+    // Material 3 elevated card: surfaceContainerLow with a level 1 shadow
+    ElevatedCard(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Category Icon and Name
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(category.color, CircleShape)
+                    .padding(12.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .background(category.color, CircleShape)
-                        .padding(12.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = category.icon,
-                        contentDescription = category.name,
-                        tint = androidx.compose.ui.graphics.Color.White,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = category.name,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = if (category.isTransfer) {
-                            "Built in, used by transfers"
-                        } else {
-                            category.type.label
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Icon(
+                    imageVector = category.icon,
+                    contentDescription = category.name,
+                    tint = androidx.compose.ui.graphics.Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
             }
 
-            if (isEditable) {
-                IconButton(
-                    onClick = onClick,
-                    modifier = Modifier.size(24.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit Category",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = category.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = category.type.label,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }

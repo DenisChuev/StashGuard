@@ -9,6 +9,7 @@ import dc.stashguard.core.domain.model.Category
 import dc.stashguard.core.domain.model.OperationType
 import dc.stashguard.core.domain.model.TRANSFER_CATEGORY_ID
 import dc.stashguard.core.domain.model.categoryType
+import dc.stashguard.core.domain.model.isTransfer
 import dc.stashguard.core.domain.repository.AccountRepository
 import dc.stashguard.core.domain.repository.CategoryRepository
 import dc.stashguard.core.domain.usecase.AddOperationUseCase
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
@@ -51,8 +53,10 @@ class AddOperationViewModel(
 
     val availableAccounts: Flow<List<Account>> = accountRepository.observeAccounts()
 
+    // Transfer is set by transfers themselves, so it isn't offered for expenses or revenues
     val availableCategories: Flow<List<Category>> =
         categoryRepository.observeCategoriesByType(operationType.categoryType)
+            .map { list -> list.filterNot { it.isTransfer } }
 
 
     fun updateAmount(amount: String) {

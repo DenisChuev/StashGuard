@@ -28,6 +28,8 @@ class EditOperationViewModelTest : MainDispatcherTest() {
     private val categories = FakeCategoryRepository(
         category("food", CategoryType.EXPENSE),
         category("salary", CategoryType.REVENUE),
+        category("gift", CategoryType.BOTH),
+        category(TRANSFER_CATEGORY_ID, CategoryType.BOTH),
     )
     private val operations = FakeOperationRepository()
 
@@ -61,10 +63,10 @@ class EditOperationViewModelTest : MainDispatcherTest() {
     }
 
     @Test
-    fun onlyCategoriesOfTheOperationTypeAreOffered() = runTest {
+    fun onlyCategoriesOfTheOperationTypeAreOfferedWithoutTransfer() = runTest {
         operations.addOperations(listOf(operation("e", "a", OperationType.EXPENSE, 100.0)))
 
-        assertEquals(listOf("food"), viewModel("e").availableCategories.first().map { it.id })
+        assertEquals(setOf("food", "gift"), viewModel("e").availableCategories.first().map { it.id }.toSet())
     }
 
     @Test

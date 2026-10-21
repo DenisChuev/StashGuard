@@ -9,6 +9,7 @@ import dc.stashguard.core.domain.model.CategoryType
 import dc.stashguard.core.domain.model.Operation
 import dc.stashguard.core.domain.model.OperationType
 import dc.stashguard.core.domain.model.categoryType
+import dc.stashguard.core.domain.model.isTransfer
 import dc.stashguard.core.domain.repository.AccountRepository
 import dc.stashguard.core.domain.repository.CategoryRepository
 import dc.stashguard.core.domain.repository.OperationRepository
@@ -51,8 +52,9 @@ class EditOperationViewModel(
     ) { categories, operation ->
         if (operation == null) return@combine emptyList()
         val filterType = operation.type.categoryType
+        // Transfer is set by transfers themselves, so it isn't offered for expenses or revenues
         categories.filter { category ->
-            category.type == filterType || category.type == CategoryType.BOTH
+            !category.isTransfer && (category.type == filterType || category.type == CategoryType.BOTH)
         }
     }
 
