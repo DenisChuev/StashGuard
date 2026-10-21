@@ -37,3 +37,10 @@ data class EditOperation(
     val operationId: String,
     val operationType: OperationType
 ) : NavKey
+
+// Nested Categories routes
+@Serializable
+data object AddCategory : NavKey
+
+@Serializable
+data class EditCategory(val categoryId: String) : NavKey

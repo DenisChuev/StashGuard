@@ -18,6 +18,9 @@ internal class CategoryRepositoryImpl(
     override fun observeCategoriesByType(type: CategoryType): Flow<List<Category>> =
         categoryDao.getCategoriesByType(type.name).map { entities -> entities.map { it.toDomain() } }
 
+    override suspend fun getCategory(id: String): Category? =
+        categoryDao.getCategoryById(id)?.toDomain()
+
     override suspend fun addCategories(categories: List<Category>) {
         categoryDao.insertCategories(categories.map { it.toEntity() })
     }

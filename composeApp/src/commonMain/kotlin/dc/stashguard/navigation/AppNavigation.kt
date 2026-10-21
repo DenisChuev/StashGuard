@@ -16,7 +16,9 @@ import dc.stashguard.feature.accounts.accounts_list.AccountsScreen
 import dc.stashguard.feature.accounts.add_account.AddAccountScreen
 import dc.stashguard.feature.accounts.details.DetailsAccountScreen
 import dc.stashguard.feature.accounts.edit_account.EditAccountScreen
-import dc.stashguard.feature.categories.CategoriesScreen
+import dc.stashguard.feature.categories.add_category.AddCategoryScreen
+import dc.stashguard.feature.categories.categories_list.CategoriesScreen
+import dc.stashguard.feature.categories.edit_category.EditCategoryScreen
 import dc.stashguard.feature.operations.OperationsScreen
 import dc.stashguard.feature.operations.add_operation.AddOperationScreen
 import dc.stashguard.feature.operations.edit_operation.EditOperationScreen
@@ -120,7 +122,26 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             // Categories Tab
             entry<CategoriesTab> {
                 CategoriesScreen(
-                    onNavigateBack = { }
+                    onNavigateBack = { },
+                    onNavigateToAddCategory = {
+                        navigationState.navigate(AddCategory)
+                    },
+                    onNavigateToEditCategory = { categoryId ->
+                        navigationState.navigate(EditCategory(categoryId))
+                    }
+                )
+            }
+
+            entry<AddCategory> {
+                AddCategoryScreen(
+                    onNavigateBack = navigationState::goBack
+                )
+            }
+
+            entry<EditCategory> { key ->
+                EditCategoryScreen(
+                    categoryId = key.categoryId,
+                    onNavigateBack = navigationState::goBack
                 )
             }
         }

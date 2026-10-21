@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 
-package dc.stashguard.feature.categories
+package dc.stashguard.feature.categories.categories_list
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -24,17 +24,20 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dc.stashguard.core.domain.model.Category
 import dc.stashguard.core.domain.model.CategoryType
+import dc.stashguard.core.domain.model.isTransfer
 import dc.stashguard.core.ui.color
+import dc.stashguard.core.ui.icon
+import dc.stashguard.feature.categories.add_category.label
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun CategoriesScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToAddCategory: () -> Unit,
+    onNavigateToEditCategory: (categoryId: String) -> Unit,
     viewModel: CategoriesViewModel = koinViewModel()
 ) {
     val categories by viewModel.categories.collectAsStateWithLifecycle()
-    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
-    val error by viewModel.error.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -42,25 +45,20 @@ fun CategoriesScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { /* TODO: Open add category dialog */ },
+                onClick = onNavigateToAddCategory,
                 modifier = Modifier.padding(bottom = 16.dp)
             ) {
                 Icon(Icons.Default.Add, "Add Category")
             }
         }
     ) { paddingValues ->
+        val loadedCategories = categories
         when {
-            isLoading -> LoadingCategoriesState(modifier = Modifier.padding(paddingValues))
-            error != null -> ErrorCategoriesState(
-                error = error!!,
-                onRetry = { viewModel.refresh() },
-                modifier = Modifier.padding(paddingValues)
-            )
-
-            categories.isEmpty() -> EmptyCategoriesState(modifier = Modifier.padding(paddingValues))
+            loadedCategories == null -> LoadingCategoriesState(modifier = Modifier.padding(paddingValues))
+            loadedCategories.isEmpty() -> EmptyCategoriesState(modifier = Modifier.padding(paddingValues))
             else -> CategoriesContent(
-                categories = categories,
-                onCategoryClick = { /* TODO: Handle category click */ },
+                categories = loadedCategories,
+                onCategoryClick = { onNavigateToEditCategory(it.id) },
                 modifier = Modifier.padding(paddingValues)
             )
         }
@@ -176,9 +174,17 @@ fun CategoryListItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Transfer is built in and can't be edited, so its card isn't clickable
+    val isEditable = !category.isTransfer
     Card(
         modifier = modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        enabled = isEditable,
+        // Keep the read-only Transfer card looking like the others instead of greyed out
+        colors = CardDefaults.cardColors(
+            disabledContainerColor = CardDefaults.cardColors().containerColor,
+            disabledContentColor = CardDefaults.cardColors().contentColor
+        ),
         onClick = onClick
     ) {
         Row(
@@ -200,25 +206,8 @@ fun CategoryListItem(
                         .padding(12.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    // Map icon names to actual icons
-                    val icon = when (category.iconName) {
-                        "restaurant" -> Icons.Default.Restaurant
-                        "directions_car" -> Icons.Default.DirectionsCar
-                        "shopping_cart" -> Icons.Default.ShoppingCart
-                        "movie" -> Icons.Default.Movie
-                        "local_hospital" -> Icons.Default.LocalHospital
-                        "receipt" -> Icons.Default.Receipt
-                        "school" -> Icons.Default.School
-                        "work" -> Icons.Default.Work
-                        "computer" -> Icons.Default.Computer
-                        "trending_up" -> Icons.AutoMirrored.Filled.TrendingUp
-                        "card_giftcard" -> Icons.Default.CardGiftcard
-                        "swap_horiz" -> Icons.Default.SwapHoriz
-                        else -> Icons.Default.Category
-                    }
-
                     Icon(
-                        imageVector = icon,
+                        imageVector = category.icon,
                         contentDescription = category.name,
                         tint = androidx.compose.ui.graphics.Color.White,
                         modifier = Modifier.size(24.dp)
@@ -237,10 +226,10 @@ fun CategoryListItem(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = when (category.type) {
-                            CategoryType.EXPENSE -> "Expense"
-                            CategoryType.REVENUE -> "Revenue"
-                            CategoryType.BOTH -> "Expense & Revenue"
+                        text = if (category.isTransfer) {
+                            "Built in, used by transfers"
+                        } else {
+                            category.type.label
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -248,16 +237,17 @@ fun CategoryListItem(
                 }
             }
 
-            // Edit button
-            IconButton(
-                onClick = { /* TODO: Open edit category */ },
-                modifier = Modifier.size(24.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = "Edit Category",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            if (isEditable) {
+                IconButton(
+                    onClick = onClick,
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit Category",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
@@ -275,38 +265,6 @@ fun LoadingCategoriesState(modifier: Modifier = Modifier) {
         ) {
             CircularProgressIndicator()
             Text("Loading categories...")
-        }
-    }
-}
-
-@Composable
-fun ErrorCategoriesState(
-    error: String,
-    onRetry: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Error,
-                contentDescription = "Error",
-                tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(48.dp)
-            )
-            Text(
-                text = error,
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center
-            )
-            Button(onClick = onRetry) {
-                Text("Retry")
-            }
         }
     }
 }

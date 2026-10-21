@@ -28,6 +28,8 @@ private val navSavedStateConfig = SavedStateConfiguration {
             subclass(DetailsAccount::class, DetailsAccount.serializer())
             subclass(AddOperation::class, AddOperation.serializer())
             subclass(EditOperation::class, EditOperation.serializer())
+            subclass(AddCategory::class, AddCategory.serializer())
+            subclass(EditCategory::class, EditCategory.serializer())
         }
     }
 }

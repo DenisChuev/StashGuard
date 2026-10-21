@@ -6,7 +6,10 @@ import dc.stashguard.core.domain.model.TRANSFER_CATEGORY_ID
 import dc.stashguard.core.domain.repository.CategoryRepository
 import kotlinx.coroutines.flow.first
 
-/** Seeds the default categories when the user has none yet. */
+/**
+ * Seeds the default categories when the user has none yet. The user can then edit, delete and
+ * add categories; the Transfer category can't be deleted, so they are never seeded again.
+ */
 class InitializeDefaultCategoriesUseCase(private val categoryRepository: CategoryRepository) {
     suspend operator fun invoke() {
         if (categoryRepository.observeCategories().first().isEmpty()) {

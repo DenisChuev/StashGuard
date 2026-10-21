@@ -37,6 +37,9 @@ interface OperationDao {
     )
     fun getDailyTotalsByAccount(accountId: String): Flow<List<DailyTotal>>
 
+    @Query("SELECT COUNT(*) FROM operations WHERE category = :categoryId")
+    fun observeOperationCountByCategory(categoryId: String): Flow<Int>
+
     @Query("SELECT * FROM operations WHERE id = :operationId")
     suspend fun getOperationById(operationId: String): OperationEntity?
 

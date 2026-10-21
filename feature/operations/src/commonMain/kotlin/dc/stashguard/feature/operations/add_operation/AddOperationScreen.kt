@@ -82,6 +82,7 @@ import dc.stashguard.core.domain.model.CategoryType
 import dc.stashguard.core.domain.model.OperationType
 import dc.stashguard.core.ui.BalanceVisualTransformation
 import dc.stashguard.core.ui.color
+import dc.stashguard.core.ui.icon
 import kotlinx.datetime.LocalDate
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -233,10 +234,8 @@ fun CategoryChip(
                     .padding(6.dp),
                 contentAlignment = Alignment.Center
             ) {
-                // Map icon names to actual icons
-                // For now using placeholder
                 Icon(
-                    Icons.Default.Category,
+                    category.icon,
                     category.name,
                     tint = androidx.compose.ui.graphics.Color.White,
                     modifier = Modifier.size(20.dp)
@@ -282,7 +281,7 @@ fun SelectedCategoryPreview(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = getCategoryIcon(category.iconName),
+                        imageVector = category.icon,
                         contentDescription = category.name,
                         tint = androidx.compose.ui.graphics.Color.White,
                         modifier = Modifier.size(20.dp)
@@ -352,25 +351,6 @@ fun FixedTransferCategorySection(
                 )
             }
         }
-    }
-}
-
-// Helper function to map icon names to actual icons
-fun getCategoryIcon(iconName: String): ImageVector {
-    return when (iconName) {
-        "restaurant" -> Icons.Default.Restaurant
-        "directions_car" -> Icons.Default.DirectionsCar
-        "shopping_cart" -> Icons.Default.ShoppingCart
-        "movie" -> Icons.Default.Movie
-        "local_hospital" -> Icons.Default.LocalHospital
-        "receipt" -> Icons.Default.Receipt
-        "school" -> Icons.Default.School
-        "work" -> Icons.Default.Work
-        "computer" -> Icons.Default.Computer
-        "trending_up" -> Icons.AutoMirrored.Filled.TrendingUp
-        "card_giftcard" -> Icons.Default.CardGiftcard
-        "swap_horiz" -> Icons.Default.SwapHoriz
-        else -> Icons.Default.Category
     }
 }
 

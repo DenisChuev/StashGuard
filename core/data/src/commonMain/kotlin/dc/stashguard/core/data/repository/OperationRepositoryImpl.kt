@@ -23,6 +23,9 @@ internal class OperationRepositoryImpl(
             totals.associate { LocalDate.parse(it.date) to it.total }
         }
 
+    override fun observeOperationCountByCategory(categoryId: String): Flow<Int> =
+        operationDao.observeOperationCountByCategory(categoryId)
+
     override suspend fun getOperation(id: String): Operation? =
         operationDao.getOperationById(id)?.toDomain()
 

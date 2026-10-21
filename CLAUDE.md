@@ -57,7 +57,7 @@ A new module needs an `include(...)` in `settings.gradle.kts`, a `build.gradle.k
 - `domainModule` (in `:composeApp`'s `di/Koin.kt`) registers the use cases as factories, which keeps `:core:domain` free of Koin. A new use case must be registered there.
 - Each feature has its own module (`accountsModule`, `operationsModule`, `categoriesModule`) registering its ViewModels. A new ViewModel must be registered in its feature's module.
 - ViewModels that take parameters (such as `accountId`) are declared as `viewModel { (id: String) -> ... }`, and screens get them with `koinViewModel { parametersOf(id) }`.
-- `initKoin` (in `:composeApp`) is called once at app startup: from `StashGuardApp.onCreate()` (in `:androidApp`) on Android, and from `iOSApp.init()` in Swift on iOS (through `setupKoin()` in `MainViewController.kt`).
+- `initKoin` (in `:composeApp`) is called once at app startup: from `StashGuardApp.onCreate()` (in `:androidApp`) on Android, and from `iOSApp.init()` in Swift on iOS (through `setupKoin()` in `MainViewController.kt`). After starting Koin it seeds the default categories (`InitializeDefaultCategoriesUseCase`) in an app-lifetime coroutine scope, so they exist before any screen needs them.
 
 **Navigation** uses Navigation 3 (`org.jetbrains.androidx.navigation3`) and lives in `:composeApp`:
 - Routes are `@Serializable` objects or data classes implementing `NavKey` in `navigation/Routes.kt`. A new route must also be registered in the polymorphic `SerializersModule` in `navigation/NavigationState.kt`; iOS has no reflection, so an unregistered route crashes when the back stack is saved.

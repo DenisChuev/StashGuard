@@ -6,8 +6,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dc.stashguard.core.domain.model.Account
 import dc.stashguard.core.domain.model.Category
-import dc.stashguard.core.domain.model.CategoryType
 import dc.stashguard.core.domain.model.OperationType
+import dc.stashguard.core.domain.model.TRANSFER_CATEGORY_ID
 import dc.stashguard.core.domain.model.categoryType
 import dc.stashguard.core.domain.repository.AccountRepository
 import dc.stashguard.core.domain.repository.CategoryRepository
@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
@@ -38,13 +37,16 @@ data class OperationState(
 
 class AddOperationViewModel(
     accountRepository: AccountRepository,
-    private val categoryRepository: CategoryRepository,
+    categoryRepository: CategoryRepository,
     private val addOperationUseCase: AddOperationUseCase,
     private val accountId: String,
     private val operationType: OperationType
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(OperationState())
+    // Transfers always use the built-in Transfer category
+    private val _state = MutableStateFlow(
+        OperationState(categoryId = if (operationType == OperationType.TRANSFER) TRANSFER_CATEGORY_ID else "")
+    )
     val state: StateFlow<OperationState> = _state.asStateFlow()
 
     val availableAccounts: Flow<List<Account>> = accountRepository.observeAccounts()
@@ -52,22 +54,6 @@ class AddOperationViewModel(
     val availableCategories: Flow<List<Category>> =
         categoryRepository.observeCategoriesByType(operationType.categoryType)
 
-
-    // For transfers, automatically select the transfer category
-    init {
-        if (operationType == OperationType.TRANSFER) {
-            viewModelScope.launch {
-                // Find and select the transfer category
-                val transferCategory = categoryRepository.observeCategoriesByType(CategoryType.BOTH)
-                    .first()
-                    .firstOrNull { it.name == "Transfer" }
-
-                transferCategory?.let {
-                    updateCategory(it.id)
-                }
-            }
-        }
-    }
 
     fun updateAmount(amount: String) {
         _state.update { it.copy(amount = amount) }

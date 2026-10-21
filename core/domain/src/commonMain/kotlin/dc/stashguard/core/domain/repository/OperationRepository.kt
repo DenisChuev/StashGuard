@@ -13,6 +13,9 @@ interface OperationRepository {
     /** Date -> how much that day's operations moved the account's balance (money in positive). */
     fun observeDailyTotalsByAccount(accountId: String): Flow<Map<LocalDate, Double>>
 
+    /** How many operations use the category [categoryId]. */
+    fun observeOperationCountByCategory(categoryId: String): Flow<Int>
+
     suspend fun getOperation(id: String): Operation?
 
     /** Both sides of a transfer. */

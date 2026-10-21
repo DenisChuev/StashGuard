@@ -8,6 +8,7 @@ kotlin {
         commonMain.dependencies {
             implementation(projects.core.common)
             implementation(projects.core.domain)
+            implementation(libs.material.icons)
         }
     }
 }

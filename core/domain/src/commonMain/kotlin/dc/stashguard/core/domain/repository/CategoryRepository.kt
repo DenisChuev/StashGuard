@@ -11,6 +11,8 @@ interface CategoryRepository {
     /** Categories of [type] plus the [CategoryType.BOTH] ones, sorted by name. */
     fun observeCategoriesByType(type: CategoryType): Flow<List<Category>>
 
+    suspend fun getCategory(id: String): Category?
+
     suspend fun addCategories(categories: List<Category>)
 
     suspend fun updateCategory(category: Category)
