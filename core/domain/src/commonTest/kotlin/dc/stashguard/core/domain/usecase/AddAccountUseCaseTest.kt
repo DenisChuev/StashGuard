@@ -1,7 +1,7 @@
 package dc.stashguard.core.domain.usecase
 
-import dc.stashguard.core.domain.fake.FakeAccountRepository
-import dc.stashguard.core.domain.fake.account
+import dc.stashguard.core.testing.FakeAccountRepository
+import dc.stashguard.core.testing.account
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals

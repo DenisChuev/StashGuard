@@ -26,6 +26,9 @@ class KmpFeatureConventionPlugin : Plugin<Project> {
                 implementation(libs.library("kermit"))
                 implementation(libs.library("kotlinx-datetime"))
             }
+            commonTestDependencies {
+                implementation(project(":core:testing"))
+            }
         }
     }
 }

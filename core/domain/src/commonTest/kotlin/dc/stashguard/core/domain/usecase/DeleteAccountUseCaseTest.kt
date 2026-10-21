@@ -1,11 +1,11 @@
 package dc.stashguard.core.domain.usecase
 
-import dc.stashguard.core.domain.fake.FakeAccountRepository
-import dc.stashguard.core.domain.fake.FakeOperationRepository
-import dc.stashguard.core.domain.fake.FakeTransactionRunner
-import dc.stashguard.core.domain.fake.account
-import dc.stashguard.core.domain.fake.operation
-import dc.stashguard.core.domain.fake.transfer
+import dc.stashguard.core.testing.FakeAccountRepository
+import dc.stashguard.core.testing.FakeOperationRepository
+import dc.stashguard.core.testing.FakeTransactionRunner
+import dc.stashguard.core.testing.account
+import dc.stashguard.core.testing.operation
+import dc.stashguard.core.testing.transfer
 import dc.stashguard.core.domain.model.OperationType
 import dc.stashguard.core.domain.model.TRANSFER_CATEGORY_ID
 import kotlinx.coroutines.test.runTest

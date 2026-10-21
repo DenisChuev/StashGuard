@@ -1,7 +1,7 @@
 package dc.stashguard.core.domain.usecase
 
-import dc.stashguard.core.domain.fake.FakeCategoryRepository
-import dc.stashguard.core.domain.fake.category
+import dc.stashguard.core.testing.FakeCategoryRepository
+import dc.stashguard.core.testing.category
 import dc.stashguard.core.domain.model.TRANSFER_CATEGORY_ID
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test

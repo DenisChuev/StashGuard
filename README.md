@@ -49,6 +49,7 @@ core/data/              Repository implementations, entity <-> model mappers
 core/database/          Room database, entities and DAOs
 core/ui/                Compose helpers shared by the features
 core/common/            Date and currency utilities
+core/testing/           Test doubles shared by the tests (fake repositories, test data)
 build-logic/            Gradle convention plugins (stashguard.kmp.library / .compose / .feature)
 .github/workflows/      CI workflow
 ```
@@ -75,7 +76,8 @@ To run on iOS, open `iosApp/iosApp.xcodeproj` in Xcode and run the `iosApp` sche
 ./gradlew iosSimulatorArm64Test     # all tests on the iOS simulator (needs Xcode)
 ```
 
-- **Use cases** (`core/domain/src/commonTest`) run against in-memory fake repositories and check the resulting balances and stored operations, including both sides of transfers. They run on both the JVM and iOS.
+- **Use cases** (`core/domain/src/commonTest`) run against in-memory fake repositories (shared from `core:testing`) and check the resulting balances and stored operations, including both sides of transfers. They run on both the JVM and iOS.
+- **ViewModels** (`feature/*/src/commonTest`) use the same fakes with the real use cases: input validation, saving, deleting, loading, and rules such as a category's locked type. They run on both the JVM and iOS.
 - **DAOs and transactions** (`core/database` and `core/data`, in `iosTest`) run against a real in-memory Room database, including a check that a failed transaction rolls back all its writes. They run on the iOS simulator only, because Room on the Android JVM needs a `Context` and the bundled SQLite driver has no native library for the host.
 - **Dependency graph** (`composeApp/src/androidHostTest`): Koin's `verify()` checks that every use case and ViewModel dependency is registered, so a missing one fails CI instead of crashing a screen.
 - Every push to `main` and every pull request runs all of these in CI.
@@ -84,9 +86,9 @@ To run on iOS, open `iosApp/iosApp.xcodeproj` in Xcode and run the `iosApp` sche
 
 **Phase 1 — first store release (December 2026)**
 
-- ✅ CI with tests (`commonTest`, Turbine) for use cases, DAOs, transactions and the Koin graph
+- ✅ CI with tests (`commonTest`, Turbine) for use cases, ViewModels, DAOs, transactions and the Koin graph
 - ✅ Editable categories
-- Code coverage (Kover), static analysis (detekt), ViewModel tests, signed release builds from CI
+- Code coverage (Kover), static analysis (detekt), signed release builds from CI
 - MVI presentation layer
 - Currency per account with exchange rates
 - Design system (colors, typography, shared components) and a light / dark / system theme setting

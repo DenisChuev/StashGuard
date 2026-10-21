@@ -1,9 +1,9 @@
 package dc.stashguard.core.domain.usecase
 
-import dc.stashguard.core.domain.fake.FakeCategoryRepository
-import dc.stashguard.core.domain.fake.FakeOperationRepository
-import dc.stashguard.core.domain.fake.category
-import dc.stashguard.core.domain.fake.operation
+import dc.stashguard.core.testing.FakeCategoryRepository
+import dc.stashguard.core.testing.FakeOperationRepository
+import dc.stashguard.core.testing.category
+import dc.stashguard.core.testing.operation
 import dc.stashguard.core.domain.model.CategoryType
 import dc.stashguard.core.domain.model.OperationType
 import dc.stashguard.core.domain.model.TRANSFER_CATEGORY_ID

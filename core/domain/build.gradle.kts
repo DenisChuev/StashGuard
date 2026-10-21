@@ -11,5 +11,8 @@ kotlin {
             api(libs.kotlinx.coroutines.core)
             api(libs.kotlinx.datetime)
         }
+        commonTest.dependencies {
+            implementation(projects.core.testing)
+        }
     }
 }

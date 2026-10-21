@@ -28,8 +28,12 @@ class KmpLibraryConventionPlugin : Plugin<Project> {
                     jvmTarget.set(JvmTarget.JVM_11)
                 }
 
-                // Runs commonTest on the JVM, without a device: `testAndroidHostTest`
-                withHostTest {}
+                // Runs commonTest on the JVM, without a device: `testAndroidHostTest`.
+                // Android framework stubs return defaults instead of throwing (e.g. Kermit's
+                // android.util.Log calls from ViewModels)
+                withHostTest {
+                    isReturnDefaultValues = true
+                }
             }
 
             iosArm64()

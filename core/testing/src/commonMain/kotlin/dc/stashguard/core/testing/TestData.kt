@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalTime::class)
 
-package dc.stashguard.core.domain.fake
+package dc.stashguard.core.testing
 
 import dc.stashguard.core.domain.model.Account
 import dc.stashguard.core.domain.model.Category
