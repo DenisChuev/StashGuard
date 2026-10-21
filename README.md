@@ -13,9 +13,10 @@ Designed with Kotlin Multiplatform, it helps you save intentionally, track goals
 
 - **Accounts** — create, edit and color-code accounts, and see the total balance at a glance
 - **Custom order** — long-press an account and drag it to rearrange the list
-- **Operations** — record revenue, expenses and transfers between accounts, then edit or delete them; balances update automatically
+- **Operations** — record revenue, expenses and transfers between accounts, then edit or delete them; balances update automatically. Pick the date from a strip of recent days or a calendar
 - **Categories** — a default set is created on first launch; rename them, change their type, color and icon, or add your own. A category that operations use can't be deleted
 - **Account details** — the account's full history grouped by day, each day with its net change, and quick buttons to add revenue, expenses or a transfer
+- **History** — every operation across accounts, grouped by day, with search and a type filter. Rows show the category's icon and name, transfers read "From → To", and tapping a row opens it for editing
 - **Light and dark theme** — Material 3, following the system setting
 - **Offline-first** — all data stays on the device
 
@@ -42,12 +43,12 @@ androidApp/             Android application — MainActivity, Application class,
 iosApp/                 Xcode project — SwiftUI entry point that hosts the Compose UI
 composeApp/             App shell shared by Android and iOS — navigation, Koin wiring, iOS framework
 feature/accounts/       Accounts list, add / edit account, account details (screens + ViewModels)
-feature/operations/     Operations list, add / edit operation
+feature/operations/     History list, add / edit operation
 feature/categories/     Categories list, add / edit category
 core/domain/            Models, repository interfaces and use cases (pure Kotlin)
 core/data/              Repository implementations, entity <-> model mappers
 core/database/          Room database, entities and DAOs
-core/ui/                Compose helpers shared by the features
+core/ui/                Compose helpers shared by the features, including the history rows
 core/common/            Date and currency utilities
 core/testing/           Test doubles shared by the tests (fake repositories, test data)
 build-logic/            Gradle convention plugins (stashguard.kmp.library / .compose / .feature)

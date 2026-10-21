@@ -145,16 +145,3 @@ class DetailsAccountViewModel(
         _error.value = null
     }
 }
-
-/**
- * A transfer's account names as (from, to), seen from the account named [accountName].
- * The other account may have been deleted, so it isn't always in [accountNames].
- */
-internal fun transferAccounts(
-    operation: Operation,
-    accountName: String,
-    accountNames: Map<String, String>
-): Pair<String, String> {
-    val otherName = operation.toAccountId?.let { accountNames[it] } ?: "Deleted account"
-    return if (operation.isIncoming) otherName to accountName else accountName to otherName
-}

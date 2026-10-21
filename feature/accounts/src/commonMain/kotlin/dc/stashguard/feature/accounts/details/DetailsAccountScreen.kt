@@ -15,7 +15,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
@@ -42,16 +41,15 @@ import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import dc.stashguard.core.common.formatForOperations
 import dc.stashguard.core.common.toCurrencyString
 import dc.stashguard.core.domain.model.Account
 import dc.stashguard.core.domain.model.Category
 import dc.stashguard.core.domain.model.Operation
 import dc.stashguard.core.domain.model.OperationType
-import dc.stashguard.core.ui.DEFAULT_CATEGORY_ICON
-import dc.stashguard.core.ui.categoryIcon
+import dc.stashguard.core.ui.OperationDayHeader
+import dc.stashguard.core.ui.OperationRow
 import dc.stashguard.core.ui.color
-import dc.stashguard.core.ui.icon
+import dc.stashguard.core.ui.isMoneyIn
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.datetime.LocalDate
@@ -292,9 +290,9 @@ fun AccountDetailsContent(
                 operationsByDay = operationsByDay,
                 isEmpty = recentOperations.isEmpty(),
                 dailyTotals = dailyTotals,
-                accountName = account.name,
                 categories = categories,
-                accountNames = accountNames,
+                // The loaded account is known before the names list arrives
+                accountNames = accountNames + (account.id to account.name),
                 canLoadMoreOperations = canLoadMoreOperations,
                 onAddRevenue = onAddRevenue,
                 onAddExpense = onAddExpense,
@@ -312,7 +310,6 @@ private fun AccountDetailsList(
     operationsByDay: Map<LocalDate, List<Operation>>,
     isEmpty: Boolean,
     dailyTotals: Map<LocalDate, Double>,
-    accountName: String,
     categories: Map<String, Category>,
     accountNames: Map<String, String>,
     canLoadMoreOperations: Boolean,
@@ -359,26 +356,17 @@ private fun AccountDetailsList(
             // Operations come newest first, so grouping keeps the days in order
             operationsByDay.forEach { (date, operations) ->
                 item(key = "day_$date") {
-                    HistoryDayHeader(
+                    OperationDayHeader(
                         date = date,
                         // Falls back to the loaded operations until the totals query emits
                         total = dailyTotals[date] ?: operations.sumOf { it.signedAmount }
                     )
                 }
                 items(operations, key = { it.id }) { operation ->
-                    val category = categories[operation.category]
-                    OperationListItem(
+                    OperationRow(
                         operation = operation,
-                        title = {
-                            if (operation.type == OperationType.TRANSFER) {
-                                val (from, to) = transferAccounts(operation, accountName, accountNames)
-                                TransferTitle(from = from, to = to)
-                            } else {
-                                // Expenses and revenues can be saved without a category
-                                HistoryTitle(text = category?.name ?: "Uncategorized")
-                            }
-                        },
-                        category = category,
+                        category = categories[operation.category],
+                        accountNames = accountNames,
                         onClick = { onOperationClick(operation) }
                     )
                 }
@@ -656,147 +644,8 @@ fun InformationRow(
     }
 }
 
-@Composable
-fun OperationListItem(
-    operation: Operation,
-    title: @Composable () -> Unit,
-    category: Category?,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    // Transfers use the Transfer quick action's icon, as the title shows the direction. Other operations
-    // show their category, like the category pickers do, or the generic category icon if it's gone
-    val transferColor = Color(0xFF2196F3)
-    val (icon, background, tint) = when {
-        operation.type == OperationType.TRANSFER -> Triple(
-            Icons.Default.SwapHoriz,
-            transferColor.copy(alpha = 0.15f),
-            transferColor
-        )
-
-        else -> Triple(
-            category?.icon ?: categoryIcon(DEFAULT_CATEGORY_ICON),
-            category?.color ?: MaterialTheme.colorScheme.outline,
-            Color.White
-        )
-    }
-    val isMoneyIn = operation.isMoneyIn
-
-    // Flat row: the day header above already shows the date. Tapping it opens the operation for editing
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(MaterialTheme.shapes.medium)
-            .clickable(onClick = onClick)
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .background(background, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = tint,
-                modifier = Modifier.size(20.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        Column(modifier = Modifier.weight(1f)) {
-            title()
-            // The amount's sign and color already tell money in from money out
-            if (operation.note.isNotBlank()) {
-                Text(
-                    text = operation.note,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        // Money in stands out in green, money out stays neutral
-        Text(
-            text = (if (isMoneyIn) "+" else "-") + operation.amount.toCurrencyString(),
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
-            color = if (isMoneyIn) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurface
-        )
-    }
-}
-
-@Composable
-private fun HistoryTitle(text: String, modifier: Modifier = Modifier) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodyLarge,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier = modifier
-    )
-}
-
-/** "From → To", with the arrow as an icon so it sits centered between the names, unlike the "→" character. */
-@Composable
-private fun TransferTitle(from: String, to: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        // Long names share the width rather than pushing the other one out
-        HistoryTitle(text = from, modifier = Modifier.weight(1f, fill = false))
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-            contentDescription = "to",
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier
-                .padding(horizontal = 6.dp)
-                .size(16.dp)
-        )
-        HistoryTitle(text = to, modifier = Modifier.weight(1f, fill = false))
-    }
-}
-
-/** Whether money came into this account or left it. */
-private val Operation.isMoneyIn: Boolean
-    get() = type == OperationType.REVENUE || (type == OperationType.TRANSFER && isIncoming)
-
 private val Operation.signedAmount: Double
     get() = if (isMoneyIn) amount else -amount
-
-/** Date on the left, the day's net change in the top right corner. */
-@Composable
-private fun HistoryDayHeader(
-    date: LocalDate,
-    total: Double,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(top = 12.dp),
-        verticalAlignment = Alignment.Top
-    ) {
-        Text(
-            text = date.formatForOperations(),
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            // A softer black than the operation names below it
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f)
-        )
-        Text(
-            text = (if (total > 0) "+" else "") + total.toCurrencyString(),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
 
 @Composable
 fun ErrorState(

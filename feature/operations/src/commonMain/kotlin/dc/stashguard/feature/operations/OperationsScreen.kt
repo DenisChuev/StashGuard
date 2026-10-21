@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalTime::class)
+@file:OptIn(ExperimentalMaterial3Api::class)
 
 package dc.stashguard.feature.operations
 
@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,22 +17,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.CallMade
-import androidx.compose.material.icons.automirrored.filled.CallReceived
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
@@ -53,18 +49,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import dc.stashguard.core.common.formatForOperations
-import dc.stashguard.core.common.formatRelativeTime
 import dc.stashguard.core.common.toCurrencyString
+import dc.stashguard.core.domain.model.Category
 import dc.stashguard.core.domain.model.Operation
 import dc.stashguard.core.domain.model.OperationType
+import dc.stashguard.core.ui.OperationDayHeader
+import dc.stashguard.core.ui.OperationRow
+import dc.stashguard.core.ui.transferAccounts
 import org.koin.compose.viewmodel.koinViewModel
-import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
-import kotlin.time.Instant
 
 @Composable
 fun OperationsScreen(
@@ -75,14 +69,15 @@ fun OperationsScreen(
 ) {
     val loadedOperations by viewModel.operations.collectAsStateWithLifecycle()
     val operations = loadedOperations ?: emptyList()
-    val categoryNames by viewModel.categoryNames.collectAsStateWithLifecycle()
+    val categories by viewModel.categories.collectAsStateWithLifecycle()
+    val accountNames by viewModel.accountNames.collectAsStateWithLifecycle()
     var searchQuery by remember { mutableStateOf("") }
     var typeFilter by remember { mutableStateOf<OperationType?>(null) }
 
-    val filteredOperations = remember(operations, categoryNames, searchQuery, typeFilter) {
+    val filteredOperations = remember(operations, categories, accountNames, searchQuery, typeFilter) {
         operations.filter { operation ->
             val matchesSearch = searchQuery.isBlank() ||
-                    operation.categoryName(categoryNames).contains(searchQuery, ignoreCase = true) ||
+                    operation.searchableNames(categories, accountNames).any { it.contains(searchQuery, ignoreCase = true) } ||
                     operation.note.contains(searchQuery, ignoreCase = true)
 
             val matchesType = typeFilter == null || operation.type == typeFilter
@@ -94,7 +89,7 @@ fun OperationsScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Operations") },
+                title = { Text("History") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -127,7 +122,8 @@ fun OperationsScreen(
                 else -> OperationsContent(
                     operations = operations,
                     filteredOperations = filteredOperations,
-                    categoryNames = categoryNames,
+                    categories = categories,
+                    accountNames = accountNames,
                     onSearchChanged = { searchQuery = it },
                     onFilterChanged = { typeFilter = it },
                     onEditOperation = onEditOperation,
@@ -143,7 +139,8 @@ fun OperationsScreen(
 private fun OperationsContent(
     operations: List<Operation>,
     filteredOperations: List<Operation>,
-    categoryNames: Map<String, String>,
+    categories: Map<String, Category>,
+    accountNames: Map<String, String>,
     onSearchChanged: (String) -> Unit,
     onFilterChanged: (OperationType?) -> Unit,
     onEditOperation: (accountId: String, operationId: String, operationType: OperationType) -> Unit,
@@ -166,15 +163,27 @@ private fun OperationsContent(
                 hasOperations = true
             )
         } else {
-            LazyColumn(modifier = Modifier.weight(1f)) {
-                items(filteredOperations) { operation ->
-                    OperationItem(
-                        operation = operation,
-                        categoryName = operation.categoryName(categoryNames),
-                        onClick = {
-                            onEditOperation(operation.accountId, operation.id, operation.type)
-                        }
-                    )
+            // Laid out like an account's history: rows grouped under their day
+            val operationsByDay = remember(filteredOperations) { filteredOperations.groupBy { it.date } }
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                operationsByDay.forEach { (date, dayOperations) ->
+                    item(key = "day_$date") {
+                        OperationDayHeader(date = date, total = dayOperations.sumOf { it.netAmount })
+                    }
+                    items(dayOperations, key = { it.id }) { operation ->
+                        OperationRow(
+                            operation = operation,
+                            category = categories[operation.category],
+                            accountNames = accountNames,
+                            onClick = { onEditOperation(operation.accountId, operation.id, operation.type) },
+                            // Across all accounts a transfer only moves money, so it has no sign
+                            signTransfers = false
+                        )
+                    }
                 }
             }
         }
@@ -223,116 +232,6 @@ fun OperationsEmptyState(
             }
         }
     }
-}
-
-@Composable
-fun OperationItem(
-    operation: Operation,
-    categoryName: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    ElevatedCard(
-        onClick = onClick,
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Icon based on operation type
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(
-                        color = when (operation.type) {
-                            OperationType.REVENUE -> Color(0xFF4CAF50).copy(alpha = 0.2f)
-                            OperationType.EXPENSE -> Color(0xFFF44336).copy(alpha = 0.2f)
-                            OperationType.TRANSFER -> Color(0xFF2196F3).copy(alpha = 0.2f)
-                        },
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                val icon = when (operation.type) {
-                    OperationType.REVENUE -> Icons.AutoMirrored.Filled.CallReceived
-                    OperationType.EXPENSE -> Icons.AutoMirrored.Filled.CallMade
-                    OperationType.TRANSFER -> Icons.Default.SwapHoriz
-                }
-                val tint = when (operation.type) {
-                    OperationType.REVENUE -> Color(0xFF4CAF50)
-                    OperationType.EXPENSE -> Color(0xFFF44336)
-                    OperationType.TRANSFER -> Color(0xFF2196F3)
-                }
-                Icon(
-                    imageVector = icon,
-                    contentDescription = operation.type.name,
-                    tint = tint,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // Operation details
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = categoryName,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium
-                )
-                if (operation.note.isNotEmpty()) {
-                    Text(
-                        text = operation.note,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                // Use the new date formatting
-                Text(
-                    text = operation.date.formatForOperations(),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
-
-                // Optional: Add relative time for very recent operations
-                if (operation.createdAt.isRecent()) {
-                    Text(
-                        text = operation.createdAt.formatRelativeTime(),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline
-                    )
-                }
-            }
-
-            // Amount with type-specific formatting
-            Text(
-                text = when (operation.type) {
-                    OperationType.REVENUE -> "+${operation.amount.toCurrencyString()}"
-                    OperationType.EXPENSE -> "-${operation.amount.toCurrencyString()}"
-                    OperationType.TRANSFER -> "→ ${operation.amount.toCurrencyString()}"
-                },
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = when (operation.type) {
-                    OperationType.REVENUE -> Color(0xFF4CAF50)
-                    OperationType.EXPENSE -> Color(0xFFF44336)
-                    OperationType.TRANSFER -> Color(0xFF2196F3)
-                }
-            )
-        }
-    }
-}
-
-private fun Instant.isRecent(hours: Int = 24): Boolean {
-    val duration = Clock.System.now() - this
-    return duration.inWholeHours < hours
 }
 
 @Composable
@@ -422,7 +321,7 @@ fun OperationsFilterBar(
                     searchText = it
                     onSearchChanged(it)
                 },
-                placeholder = { Text("Search operations...") },
+                placeholder = { Text("Search history...") },
                 leadingIcon = { Icon(Icons.Default.Search, null) },
                 modifier = Modifier.weight(1f),
                 colors = TextFieldDefaults.colors(
@@ -490,6 +389,21 @@ fun OperationsFilterBar(
     }
 }
 
-/** Name of the operation's category; falls back to the stored id if the category is gone. */
-private fun Operation.categoryName(categoryNames: Map<String, String>): String =
-    categoryNames[category] ?: category
+/** Names the search matches besides the note: the category's, or a transfer's two accounts. */
+private fun Operation.searchableNames(
+    categories: Map<String, Category>,
+    accountNames: Map<String, String>
+): List<String> =
+    if (type == OperationType.TRANSFER) {
+        transferAccounts(this, accountNames).toList()
+    } else {
+        listOfNotNull(categories[category]?.name)
+    }
+
+/** The operation's effect on the total across all accounts: a transfer moves money between them. */
+private val Operation.netAmount: Double
+    get() = when (type) {
+        OperationType.REVENUE -> amount
+        OperationType.EXPENSE -> -amount
+        OperationType.TRANSFER -> 0.0
+    }

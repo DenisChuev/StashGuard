@@ -8,7 +8,7 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 val operationsModule = module {
-    viewModel { OperationsViewModel(get(), get()) }
+    viewModel { OperationsViewModel(get(), get(), get()) }
 
     viewModel { (accountId: String, operationType: OperationType) ->
         AddOperationViewModel(

@@ -10,5 +10,8 @@ kotlin {
             implementation(projects.core.domain)
             implementation(libs.material.icons)
         }
+        commonTest.dependencies {
+            implementation(projects.core.testing)
+        }
     }
 }

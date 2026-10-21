@@ -29,7 +29,7 @@ enum class BottomNavigationItem(
     ),
     Operations(
         tab = OperationsTab,
-        title = "Operations",
+        title = "History",
         selectedIcon = Icons.Filled.Receipt,
         unselectedIcon = Icons.Outlined.Receipt,
         accent = Color(0xFF1565C0),

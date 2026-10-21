@@ -16,7 +16,7 @@ Modules (all KMP libraries using `com.android.kotlin.multiplatform.library`, cod
 | `:core:domain` | `dc.stashguard.core.domain` | `model/`, `repository/` interfaces and `usecase/`. Pure Kotlin: no Compose, Room or Koin. |
 | `:core:data` | `dc.stashguard.core.data` | Repository implementations (`internal`), entity <-> model mappers, `dataModule`. |
 | `:core:database` | `dc.stashguard.core.database` | Room `AppDatabase`, entities, DAOs, platform builders, `databaseModule`. |
-| `:core:ui` | `dc.stashguard.core.ui` | Compose helpers shared by features (e.g. `Account.color` / `Category.color`). |
+| `:core:ui` | `dc.stashguard.core.ui` | Compose helpers shared by features: `Account.color` / `Category.color`, category icons, and `OperationRow` / `OperationDayHeader`, the history rows used by both the account details screen and the History tab. |
 | `:core:common` | `dc.stashguard.core.common` | `DateUtils`, `CurrencyUtils`. |
 | `:core:testing` | `dc.stashguard.core.testing` | Test doubles: in-memory `Fake*Repository`, `FakeTransactionRunner`, test data builders, `MainDispatcherTest`, `keepCollecting`. Only ever a `commonTest` dependency. |
 

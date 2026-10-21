@@ -2,8 +2,10 @@ package dc.stashguard.feature.operations
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dc.stashguard.core.domain.model.Category
 import dc.stashguard.core.domain.model.Operation
 import dc.stashguard.core.domain.model.OperationType
+import dc.stashguard.core.domain.repository.AccountRepository
 import dc.stashguard.core.domain.repository.CategoryRepository
 import dc.stashguard.core.domain.repository.OperationRepository
 import kotlinx.coroutines.flow.SharingStarted
@@ -14,19 +16,35 @@ import kotlinx.coroutines.flow.stateIn
 class OperationsViewModel(
     operationRepository: OperationRepository,
     categoryRepository: CategoryRepository,
+    accountRepository: AccountRepository,
 ) : ViewModel() {
-    /** Null until the first database read, so the empty state doesn't flash while loading. */
+    /**
+     * Newest date first, and within a day the latest added first, as the list groups them by day.
+     * Null until the first database read, so the empty state doesn't flash while loading.
+     */
     val operations: StateFlow<List<Operation>?> = operationRepository.observeOperations()
-        .map { operations -> operations.withoutReceivingTransferSides().sortedByDescending { it.createdAt } }
+        .map { operations ->
+            operations.withoutReceivingTransferSides()
+                .sortedWith(compareByDescending<Operation> { it.date }.thenByDescending { it.createdAt })
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = null
         )
 
-    /** Category id -> name. Operations store the category id. */
-    val categoryNames: StateFlow<Map<String, String>> = categoryRepository.observeCategories()
-        .map { categories -> categories.associate { it.id to it.name } }
+    /** Category id -> category, for each row's name and icon. Operations store the category id. */
+    val categories: StateFlow<Map<String, Category>> = categoryRepository.observeCategories()
+        .map { categories -> categories.associateBy { it.id } }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyMap()
+        )
+
+    /** Account id -> name, for both sides of transfers. */
+    val accountNames: StateFlow<Map<String, String>> = accountRepository.observeAccounts()
+        .map { accounts -> accounts.associate { it.id to it.name } }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
