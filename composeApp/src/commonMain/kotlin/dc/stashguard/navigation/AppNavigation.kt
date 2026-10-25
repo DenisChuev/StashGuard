@@ -102,7 +102,6 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                     onEditOperation = { accountId, operationId, operationType ->
                         navigationState.navigate(EditOperation(accountId, operationId, operationType))
                     },
-                    onNavigateBack = { navigationState.navigate(AccountsTab) },
                     onNavigateToAccounts = { navigationState.navigate(AccountsTab) }
                 )
             }

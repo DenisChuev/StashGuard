@@ -16,7 +16,7 @@ Designed with Kotlin Multiplatform, it helps you save intentionally, track goals
 - **Operations** — record revenue, expenses and transfers between accounts, then edit or delete them; balances update automatically. Pick the date from a strip of recent days or a calendar
 - **Categories** — a default set is created on first launch; rename them, change their type, color and icon, or add your own. A category that operations use can't be deleted
 - **Account details** — the account's full history grouped by day, each day with its net change, and quick buttons to add revenue, expenses or a transfer
-- **History** — every operation across accounts, grouped by day, with search and a type filter. Rows show the category's icon and name, transfers read "From → To", and tapping a row opens it for editing
+- **History** — every operation across accounts, grouped by day, with search and an income / expense filter in the top bar. Rows show the category's icon and name, transfers read "From → To", and tapping a row opens it for editing
 - **Light and dark theme** — Material 3, following the system setting
 - **Offline-first** — all data stays on the device
 

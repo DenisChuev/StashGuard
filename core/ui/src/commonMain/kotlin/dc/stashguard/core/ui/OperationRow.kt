@@ -168,11 +168,11 @@ private fun TransferTitle(from: String, to: String) {
     }
 }
 
-/** Date on the left, the day's net change in the top right corner. */
+/** Date on the left, the day's total (if any) in the top right corner. */
 @Composable
 fun OperationDayHeader(
     date: LocalDate,
-    total: Double,
+    total: Double?,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -189,10 +189,12 @@ fun OperationDayHeader(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(1f)
         )
-        Text(
-            text = (if (total > 0) "+" else "") + total.toCurrencyString(),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        if (total != null) {
+            Text(
+                text = (if (total > 0) "+" else "") + total.toCurrencyString(),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
