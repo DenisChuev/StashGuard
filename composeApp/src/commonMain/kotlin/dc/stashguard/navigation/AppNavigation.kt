@@ -21,6 +21,7 @@ import dc.stashguard.feature.categories.categories_list.CategoriesScreen
 import dc.stashguard.feature.categories.edit_category.EditCategoryScreen
 import dc.stashguard.feature.operations.OperationsScreen
 import dc.stashguard.feature.operations.add_operation.AddOperationScreen
+import dc.stashguard.feature.operations.category_stats.CategoryStatsScreen
 import dc.stashguard.feature.operations.edit_operation.EditOperationScreen
 
 private val logger = Logger.withTag("AppNavigation")
@@ -102,7 +103,17 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                     onEditOperation = { accountId, operationId, operationType ->
                         navigationState.navigate(EditOperation(accountId, operationId, operationType))
                     },
+                    onNavigateToCategoryStats = { operationType ->
+                        navigationState.navigate(CategoryStats(operationType))
+                    },
                     onNavigateToAccounts = { navigationState.navigate(AccountsTab) }
+                )
+            }
+
+            entry<CategoryStats> { key ->
+                CategoryStatsScreen(
+                    initialType = key.operationType,
+                    onNavigateBack = navigationState::goBack
                 )
             }
 

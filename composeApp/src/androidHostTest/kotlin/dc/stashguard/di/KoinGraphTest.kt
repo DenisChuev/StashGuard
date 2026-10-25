@@ -6,6 +6,7 @@ import dc.stashguard.feature.accounts.details.DetailsAccountViewModel
 import dc.stashguard.feature.accounts.edit_account.EditAccountViewModel
 import dc.stashguard.feature.categories.edit_category.EditCategoryViewModel
 import dc.stashguard.feature.operations.add_operation.AddOperationViewModel
+import dc.stashguard.feature.operations.category_stats.CategoryStatsViewModel
 import dc.stashguard.feature.operations.edit_operation.EditOperationViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
 import org.koin.dsl.module
@@ -34,6 +35,7 @@ class KoinGraphTest {
                 definition<DetailsAccountViewModel>(String::class),
                 definition<AddOperationViewModel>(String::class, OperationType::class),
                 definition<EditOperationViewModel>(String::class),
+                definition<CategoryStatsViewModel>(OperationType::class),
                 definition<EditCategoryViewModel>(String::class),
             ),
         )

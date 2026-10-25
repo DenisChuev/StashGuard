@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -64,12 +65,17 @@ import dc.stashguard.core.domain.model.Operation
 import dc.stashguard.core.domain.model.OperationType
 import dc.stashguard.core.ui.OperationDayHeader
 import dc.stashguard.core.ui.OperationRow
+import dc.stashguard.core.ui.color
+import dc.stashguard.feature.operations.category_stats.CategorySlice
+import dc.stashguard.feature.operations.category_stats.DonutChart
+import dc.stashguard.feature.operations.category_stats.categorySlices
 import dc.stashguard.core.ui.transferAccounts
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun OperationsScreen(
     onEditOperation: (accountId: String, operationId: String, operationType: OperationType) -> Unit,
+    onNavigateToCategoryStats: (OperationType) -> Unit,
     onNavigateToAccounts: () -> Unit,
     viewModel: OperationsViewModel = koinViewModel()
 ) {
@@ -134,6 +140,7 @@ fun OperationsScreen(
                     typeFilter = typeFilter,
                     onFilterChanged = { typeFilter = it },
                     onEditOperation = onEditOperation,
+                    onNavigateToCategoryStats = onNavigateToCategoryStats,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -151,11 +158,16 @@ private fun OperationsContent(
     typeFilter: OperationType?,
     onFilterChanged: (OperationType?) -> Unit,
     onEditOperation: (accountId: String, operationId: String, operationType: OperationType) -> Unit,
+    onNavigateToCategoryStats: (OperationType) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
         // Header with type-based stats
-        OperationsHeader(operations = operations)
+        OperationsHeader(
+            operations = operations,
+            categories = categories,
+            onTotalClick = onNavigateToCategoryStats
+        )
 
         typeFilter?.let { filter ->
             FilterChip(
@@ -250,18 +262,24 @@ fun OperationsEmptyState(
 @Composable
 fun OperationsHeader(
     operations: List<Operation>,
+    categories: Map<String, Category>,
+    onTotalClick: (OperationType) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.background(MaterialTheme.colorScheme.primary)) {
         // Type-based statistics
         val income = operations.filter { it.type == OperationType.REVENUE }.sumOf { it.amount }
         val expense = operations.filter { it.type == OperationType.EXPENSE }.sumOf { it.amount }
+        val incomeSlices = remember(operations, categories) { operations.categorySlices(categories, OperationType.REVENUE) }
+        val expenseSlices = remember(operations, categories) { operations.categorySlices(categories, OperationType.EXPENSE) }
 
         Row(modifier = Modifier.padding(16.dp)) {
             StatItem(
                 label = "Income",
                 value = income,
                 color = Color(0xFF4CAF50),
+                slices = incomeSlices,
+                onClick = { onTotalClick(OperationType.REVENUE) },
                 modifier = Modifier.weight(1f)
             )
             Spacer(modifier = Modifier.width(8.dp))
@@ -269,35 +287,59 @@ fun OperationsHeader(
                 label = "Expense",
                 value = expense,
                 color = Color(0xFFF44336),
+                slices = expenseSlices,
+                onClick = { onTotalClick(OperationType.EXPENSE) },
                 modifier = Modifier.weight(1f)
             )
         }
     }
 }
 
+/** A total that opens its breakdown by category, previewed by a mini chart of [slices] on the right. */
 @Composable
 private fun StatItem(
     label: String,
     value: Double,
     color: Color,
+    slices: List<CategorySlice>,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
+        onClick = onClick,
         modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+        // Chart and total sit together in the middle of the card
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            val outline = MaterialTheme.colorScheme.outline
+            DonutChart(
+                slices = slices,
+                colorOf = { it.category?.color ?: outline },
+                size = 36.dp,
+                strokeWidth = 7.dp,
+                showPercentages = false
             )
-            Text(
-                text = value.toCurrencyString(),
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = color
-            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = value.toCurrencyString(),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = color
+                )
+            }
         }
     }
 }
