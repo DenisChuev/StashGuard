@@ -70,8 +70,9 @@ private val monthFormat = YearMonth.Format {
 @Composable
 fun CategoryStatsScreen(
     initialType: OperationType,
+    initialMonth: YearMonth? = null,
     onNavigateBack: () -> Unit,
-    viewModel: CategoryStatsViewModel = koinViewModel { parametersOf(initialType) }
+    viewModel: CategoryStatsViewModel = koinViewModel { parametersOf(initialType, initialMonth) }
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 

@@ -15,10 +15,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
@@ -42,8 +43,9 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,6 +61,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dc.stashguard.core.common.DateUtils
 import dc.stashguard.core.common.toCurrencyString
 import dc.stashguard.core.domain.model.Category
 import dc.stashguard.core.domain.model.Operation
@@ -66,16 +69,27 @@ import dc.stashguard.core.domain.model.OperationType
 import dc.stashguard.core.ui.OperationDayHeader
 import dc.stashguard.core.ui.OperationRow
 import dc.stashguard.core.ui.color
+import dc.stashguard.core.ui.transferAccounts
 import dc.stashguard.feature.operations.category_stats.CategorySlice
 import dc.stashguard.feature.operations.category_stats.DonutChart
 import dc.stashguard.feature.operations.category_stats.categorySlices
-import dc.stashguard.core.ui.transferAccounts
+import kotlinx.datetime.YearMonth
+import kotlinx.datetime.format
+import kotlinx.datetime.format.MonthNames
+import kotlinx.datetime.format.char
+import kotlinx.datetime.yearMonth
 import org.koin.compose.viewmodel.koinViewModel
+
+private val monthFormat = YearMonth.Format {
+    monthName(MonthNames.ENGLISH_FULL)
+    char(' ')
+    year()
+}
 
 @Composable
 fun OperationsScreen(
     onEditOperation: (accountId: String, operationId: String, operationType: OperationType) -> Unit,
-    onNavigateToCategoryStats: (OperationType) -> Unit,
+    onNavigateToCategoryStats: (OperationType, YearMonth) -> Unit,
     onNavigateToAccounts: () -> Unit,
     viewModel: OperationsViewModel = koinViewModel()
 ) {
@@ -158,14 +172,35 @@ private fun OperationsContent(
     typeFilter: OperationType?,
     onFilterChanged: (OperationType?) -> Unit,
     onEditOperation: (accountId: String, operationId: String, operationType: OperationType) -> Unit,
-    onNavigateToCategoryStats: (OperationType) -> Unit,
+    onNavigateToCategoryStats: (OperationType, YearMonth) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val listState = rememberLazyListState()
+
+    // Map each position in LazyColumn to its date to derive the visible month while scrolling
+    val operationsByDay = remember(filteredOperations) { filteredOperations.groupBy { it.date } }
+    val itemDates = remember(filteredOperations, operationsByDay) {
+        buildList {
+            operationsByDay.forEach { (date, dayOperations) ->
+                add(date) // Day header item
+                repeat(dayOperations.size) { add(date) } // Operation items
+            }
+        }
+    }
+
+    val activeMonth by remember(itemDates, listState) {
+        derivedStateOf {
+            val date = itemDates.getOrNull(listState.firstVisibleItemIndex)
+            date?.yearMonth ?: DateUtils.currentDate().yearMonth
+        }
+    }
+
     Column(modifier = modifier) {
-        // Header with type-based stats
+        // Header with active month type-based stats
         OperationsHeader(
             operations = operations,
             categories = categories,
+            activeMonth = activeMonth,
             onTotalClick = onNavigateToCategoryStats
         )
 
@@ -186,9 +221,8 @@ private fun OperationsContent(
                 hasOperations = true
             )
         } else {
-            // Laid out like an account's history: rows grouped under their day
-            val operationsByDay = remember(filteredOperations) { filteredOperations.groupBy { it.date } }
             LazyColumn(
+                state = listState,
                 modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -263,23 +297,43 @@ fun OperationsEmptyState(
 fun OperationsHeader(
     operations: List<Operation>,
     categories: Map<String, Category>,
-    onTotalClick: (OperationType) -> Unit,
+    activeMonth: YearMonth,
+    onTotalClick: (OperationType, YearMonth) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.background(MaterialTheme.colorScheme.primary)) {
-        // Type-based statistics
-        val income = operations.filter { it.type == OperationType.REVENUE }.sumOf { it.amount }
-        val expense = operations.filter { it.type == OperationType.EXPENSE }.sumOf { it.amount }
-        val incomeSlices = remember(operations, categories) { operations.categorySlices(categories, OperationType.REVENUE) }
-        val expenseSlices = remember(operations, categories) { operations.categorySlices(categories, OperationType.EXPENSE) }
+        Text(
+            text = activeMonth.format(monthFormat),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
+            modifier = Modifier.padding(start = 16.dp, top = 8.dp, end = 16.dp)
+        )
 
-        Row(modifier = Modifier.padding(16.dp)) {
+        // Type-based statistics for the active month
+        val monthOperations = remember(operations, activeMonth) {
+            operations.filter { it.date.yearMonth == activeMonth }
+        }
+        val income = remember(monthOperations) {
+            monthOperations.filter { it.type == OperationType.REVENUE }.sumOf { it.amount }
+        }
+        val expense = remember(monthOperations) {
+            monthOperations.filter { it.type == OperationType.EXPENSE }.sumOf { it.amount }
+        }
+        val incomeSlices = remember(monthOperations, categories) {
+            monthOperations.categorySlices(categories, OperationType.REVENUE)
+        }
+        val expenseSlices = remember(monthOperations, categories) {
+            monthOperations.categorySlices(categories, OperationType.EXPENSE)
+        }
+
+        Row(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 16.dp)) {
             StatItem(
                 label = "Income",
                 value = income,
                 color = Color(0xFF4CAF50),
                 slices = incomeSlices,
-                onClick = { onTotalClick(OperationType.REVENUE) },
+                onClick = { onTotalClick(OperationType.REVENUE, activeMonth) },
                 modifier = Modifier.weight(1f)
             )
             Spacer(modifier = Modifier.width(8.dp))
@@ -288,7 +342,7 @@ fun OperationsHeader(
                 value = expense,
                 color = Color(0xFFF44336),
                 slices = expenseSlices,
-                onClick = { onTotalClick(OperationType.EXPENSE) },
+                onClick = { onTotalClick(OperationType.EXPENSE, activeMonth) },
                 modifier = Modifier.weight(1f)
             )
         }

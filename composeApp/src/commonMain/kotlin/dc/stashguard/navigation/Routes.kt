@@ -40,7 +40,10 @@ data class EditOperation(
 
 /** The income or expense breakdown by category, opened from the History header. */
 @Serializable
-data class CategoryStats(val operationType: OperationType) : NavKey
+data class CategoryStats(
+    val operationType: OperationType,
+    val monthString: String? = null
+) : NavKey
 
 // Nested Categories routes
 @Serializable

@@ -103,8 +103,8 @@ fun AppNavigation(modifier: Modifier = Modifier) {
                     onEditOperation = { accountId, operationId, operationType ->
                         navigationState.navigate(EditOperation(accountId, operationId, operationType))
                     },
-                    onNavigateToCategoryStats = { operationType ->
-                        navigationState.navigate(CategoryStats(operationType))
+                    onNavigateToCategoryStats = { operationType, month ->
+                        navigationState.navigate(CategoryStats(operationType, month.toString()))
                     },
                     onNavigateToAccounts = { navigationState.navigate(AccountsTab) }
                 )
@@ -113,6 +113,7 @@ fun AppNavigation(modifier: Modifier = Modifier) {
             entry<CategoryStats> { key ->
                 CategoryStatsScreen(
                     initialType = key.operationType,
+                    initialMonth = key.monthString?.let { kotlinx.datetime.YearMonth.parse(it) },
                     onNavigateBack = navigationState::goBack
                 )
             }

@@ -35,7 +35,7 @@ class KoinGraphTest {
                 definition<DetailsAccountViewModel>(String::class),
                 definition<AddOperationViewModel>(String::class, OperationType::class),
                 definition<EditOperationViewModel>(String::class),
-                definition<CategoryStatsViewModel>(OperationType::class),
+                definition<CategoryStatsViewModel>(OperationType::class, kotlinx.datetime.YearMonth::class),
                 definition<EditCategoryViewModel>(String::class),
             ),
         )

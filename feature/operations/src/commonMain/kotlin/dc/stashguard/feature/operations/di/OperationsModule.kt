@@ -11,11 +11,12 @@ import org.koin.dsl.module
 val operationsModule = module {
     viewModel { OperationsViewModel(get(), get(), get()) }
 
-    viewModel { (operationType: OperationType) ->
+    viewModel { (operationType: OperationType, initialMonth: kotlinx.datetime.YearMonth?) ->
         CategoryStatsViewModel(
             operationRepository = get(),
             categoryRepository = get(),
-            initialType = operationType
+            initialType = operationType,
+            initialMonth = initialMonth
         )
     }
 

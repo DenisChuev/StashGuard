@@ -35,10 +35,11 @@ class CategoryStatsViewModel(
     operationRepository: OperationRepository,
     categoryRepository: CategoryRepository,
     initialType: OperationType,
+    initialMonth: YearMonth? = null,
     private val currentMonth: YearMonth = DateUtils.currentDate().yearMonth,
 ) : ViewModel() {
     private val type = MutableStateFlow(initialType)
-    private val month = MutableStateFlow(currentMonth)
+    private val month = MutableStateFlow(initialMonth ?: currentMonth)
 
     /** Null until the first database read, so the empty state doesn't flash while loading. */
     val state: StateFlow<CategoryStatsState?> = combine(
