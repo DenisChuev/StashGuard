@@ -231,8 +231,9 @@ fun BalanceInput(
     OutlinedTextField(
         value = balance,
         onValueChange = { newValue ->
-            if (isValidBalanceInput(newValue)) {
-                onBalanceChange(newValue)
+            val cleanValue = newValue.replace(" ", "")
+            if (isValidBalanceInput(cleanValue)) {
+                onBalanceChange(cleanValue)
             }
         },
         visualTransformation = BalanceVisualTransformation(),

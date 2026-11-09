@@ -24,7 +24,7 @@ class BalanceVisualTransformation : VisualTransformation {
                         currentNonSpaceCount++
                     }
                     if (currentNonSpaceCount >= nonSpaceCountInOriginal) {
-                        return i + 1
+                        return if (formatted.getOrNull(i + 1) == ' ') i + 2 else i + 1
                     }
                 }
                 return formatted.length
@@ -34,8 +34,12 @@ class BalanceVisualTransformation : VisualTransformation {
                 if (offset <= 0) return 0
                 if (offset >= formatted.length) return original.length
 
-                val nonSpaceCountInFormatted = formatted.take(offset).count { it != ' ' }
-                return nonSpaceCountInFormatted.coerceAtMost(original.length)
+                val nonSpaceCount = formatted.take(offset).count { it != ' ' }
+                return if (formatted.getOrNull(offset) == ' ') {
+                    (nonSpaceCount - 1).coerceAtLeast(0)
+                } else {
+                    nonSpaceCount.coerceAtMost(original.length)
+                }
             }
         }
 

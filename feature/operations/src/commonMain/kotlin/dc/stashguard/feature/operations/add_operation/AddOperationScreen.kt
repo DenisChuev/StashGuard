@@ -540,8 +540,9 @@ fun AmountInputSection(
                 value = amount,
                 onValueChange = { newValue ->
                     // Allow only numbers and a decimal point with up to 2 decimals
-                    if (newValue.matches(Regex("^\\d*\\.?\\d{0,2}$"))) {
-                        onAmountChange(newValue)
+                    val cleanValue = newValue.replace(" ", "")
+                    if (cleanValue.matches(Regex("^\\d*\\.?\\d{0,2}$"))) {
+                        onAmountChange(cleanValue)
                     }
                 },
                 label = { Text("Enter amount") },
